@@ -1,0 +1,66 @@
+name: Repository checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  documentation:
+    name: Documentation
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Check documentation and repository files
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          from urllib.parse import unquote, urlsplit
+
+          root = Path.cwd().resolve()
+          errors = []
+          required = [
+              "README.md", "CONTRIBUTING.md",
+              ".gitignore", ".github/pull_request_template.md",
+          ]
+          for name in required:
+              if not (root / name).is_file():
+                  errors.append(f"Missing required file: {name}")
+
+          markdown_count = 0
+          for path in root.rglob("*"):
+              if not path.is_file() or ".git" in path.relative_to(root).parts:
+                  continue
+              relative = path.relative_to(root)
+              if (path.name == ".env" or path.name.startswith(".env.")) and path.name not in {".env.example", ".env.sample"}:
+                  errors.append(f"Local environment file must not be committed: {relative}")
+              if path.suffix.lower() != ".md":
+                  continue
+              markdown_count += 1
+              content = path.read_text(encoding="utf-8")
+              if re.search(r"(?m)^(<<<<<<< |>>>>>>> )", content):
+                  errors.append(f"Unresolved merge conflict: {relative}")
+              content = re.sub(r"(?ms)^\x60{3}.*?^\x60{3}[^\n]*", "", content)
+              for target in re.findall(r"!?\[[^\]]*\]\(([^)\s]+)\)", content):
+                  if urlsplit(target).scheme or target.startswith("//"):
+                      continue
+                  target_path = unquote(target.split("#", 1)[0].split("?", 1)[0])
+                  if not target_path:
+                      continue
+                  destination = ((root / target_path.lstrip("/")) if target_path.startswith("/") else (path.parent / target_path)).resolve()
+                  if not destination.is_relative_to(root) or not destination.exists():
+                      errors.append(f"Broken local link in {relative}: {target}")
+
+          if errors:
+              raise SystemExit("\n".join(errors))
+          print(f"Repository checks passed: {markdown_count} Markdown files checked.")
+          PY
