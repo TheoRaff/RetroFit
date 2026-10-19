@@ -1,0 +1,34 @@
+name: Assign new issues
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  issues: write
+
+jobs:
+  assign:
+    name: Assign issue to its author
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/github-script@v9
+        with:
+          script: |
+            const issue = context.payload.issue;
+            const teammates = ["Raff407", "theorook"];
+            if (issue.assignees.length > 0) {
+              core.info("Keeping the existing assignee.");
+              return;
+            }
+            if (!teammates.includes(issue.user.login)) {
+              core.info("Leaving this issue for manual triage.");
+              return;
+            }
+            await github.rest.issues.addAssignees({
+              ...context.repo,
+              issue_number: issue.number,
+              assignees: [issue.user.login],
+            });
+            core.info("Assigned the issue to its author.");
