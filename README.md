@@ -18,3 +18,9 @@ Keep `main` ready to demo. Use issues to divide up tasks and coordinate when edi
 Add the project idea, setup instructions, and demo link here as the build takes shape.
 
 Keep passwords and API keys out of the repository. Use local environment files and share an `.env.example` containing placeholder values when needed.
+
+## Repository automation
+
+- [Repository checks](.github/workflows/repository-checks.yml) run on pull requests into `main`, pushes to `main`, and manual runs. They check required documentation, local Markdown file links, merge-conflict markers in Markdown, and accidentally committed environment files. Add application build and test steps when the stack is chosen.
+- [Issue assignment](.github/workflows/assign-issues.yml) assigns a new unassigned issue to its author when opened by Raff407 or theorook. Existing assignments stay unchanged; issues from other authors are left for manual triage.
+- A review rule for `main` is saved. GitHub currently labels it **Not enforced** because the repo is private on the Free organisation plan. Follow the review agreement in the Git guide; enforcement requires a supported plan or a public repository.
