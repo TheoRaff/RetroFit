@@ -3,6 +3,7 @@ import SwiftUI
 /// Full-screen AI try-on: live camera, a countdown, then the AI render of you wearing the look,
 /// one garment at a time.
 struct AITryOnView: View {
+    @AppStorage("photoCountdownSeconds") private var photoCountdownSeconds = 3
     @Environment(\.dismiss) private var dismiss
     @State private var model: AITryOnModel
     @State private var camera = CameraController()
@@ -109,9 +110,10 @@ struct AITryOnView: View {
                     Win95Tooltip(text: message)
                 }
                 ShutterButton(isBusy: cameraError != nil) {
-                    model.startCountdown { try await camera.capturePhoto() }
-                }
-                .accessibilityLabel("Start \(model.countdownSeconds) second timer")
+                    model.startCountdown(seconds: photoCountdownSeconds) {
+                        try await camera.capturePhoto()
+                    }
+                }                .accessibilityLabel("Start \(model.countdownSeconds) second timer")
                 Text("Tap to start a \(model.countdownSeconds)-second timer")
                     .font(Win95.font(13, relativeTo: .footnote))
                     .foregroundStyle(.white)

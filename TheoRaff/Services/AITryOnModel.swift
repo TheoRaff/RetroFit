@@ -74,11 +74,20 @@ final class AITryOnModel {
     var canStartCountdown: Bool { phase == .camera }
 
     /// The shutter: counts down, takes the photo with `capture`, then renders the look onto it.
-    func startCountdown(capture: @escaping @MainActor () async throws -> UIImage) {
+    func startCountdown(
+        seconds: Int,
+        capture: @escaping @MainActor () async throws -> UIImage
+    ) {
         guard canStartCountdown, let pieces = renderPieces else { return }
-        phase = .countdown(countdownSeconds)
+
+        let seconds = max(0, seconds)
+        phase = .countdown(seconds)
         task = Task { [weak self] in
-            await self?.run(pieces: pieces, capture: capture)
+            await self?.run(
+                pieces: pieces,
+                countdownSeconds: seconds,
+                capture: capture
+            )
         }
     }
 
@@ -135,7 +144,11 @@ final class AITryOnModel {
         return .camera
     }
 
-    private func run(pieces: [(Garment, UIImage)], capture: @MainActor () async throws -> UIImage) async {
+    private func run(
+        pieces: [(Garment, UIImage)],
+        countdownSeconds: Int,
+        capture: @MainActor () async throws -> UIImage
+    ) async {
         let renderer: TryOnRendering
         do {
             renderer = try makeRenderer()
@@ -144,7 +157,7 @@ final class AITryOnModel {
             return
         }
         do {
-            try await countDown()
+            try await countDown(seconds: countdownSeconds)
             let photo: UIImage
             do {
                 photo = try await capture()
@@ -174,20 +187,22 @@ final class AITryOnModel {
             phase = .failed(Self.message(for: error))
         }
     }
-
-    private func countDown() async throws {
-        for remaining in stride(from: countdownSeconds, through: 1, by: -1) {
-            try Task.checkCancellation()
-            phase = .countdown(remaining)
-            try await sleep(.seconds(1))
-        }
-    }
-
+    
     private static func message(for error: Error) -> String {
         if let renderError = error as? RenderError {
             return renderError.localizedDescription
         }
         return "The AI try-on failed. Try again."
+    }
+
+    private func countDown(seconds: Int) async throws {
+        guard seconds > 0 else { return }
+
+        for remaining in stride(from: seconds, through: 1, by: -1) {
+            try Task.checkCancellation()
+            phase = .countdown(remaining)
+            try await sleep(.seconds(1))
+        }
     }
 
     private static func missingPhotoMessage(for garment: Garment) -> String {
