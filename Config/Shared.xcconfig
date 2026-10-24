@@ -7,6 +7,11 @@
 DEVELOPMENT_TEAM =
 BUNDLE_ID_SUFFIX =
 
+// AI render function (server/api/render.ts). The host is public.
+// The token is the APP_TOKEN set in Vercel; put it in Local.xcconfig, never here.
+RENDER_HOST = theoraff-render.vercel.app
+RENDER_API_TOKEN =
+
 #include? "Local.xcconfig"
 
 PRODUCT_BUNDLE_IDENTIFIER = com.theoraff.TheoRaff$(BUNDLE_ID_SUFFIX)
