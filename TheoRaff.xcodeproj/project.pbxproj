@@ -349,6 +349,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = TheoRaff/Info.plist;
 				INFOPLIST_KEY_NSCameraUsageDescription = "The camera shows clothes on you live. The live view stays on your phone.";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Saves the photos you take while trying clothes on to your camera roll.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -378,6 +379,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = TheoRaff/Info.plist;
 				INFOPLIST_KEY_NSCameraUsageDescription = "The camera shows clothes on you live. The live view stays on your phone.";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Saves the photos you take while trying clothes on to your camera roll.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
