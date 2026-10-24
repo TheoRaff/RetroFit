@@ -181,5 +181,44 @@ struct TryOnSessionTests {
         session.unlikeCurrentOutfit()
         #expect(session.closet == [hoodie])
     }
-}
 
+    // MARK: Fitting room
+
+    @Test func fittingRoomStartsEmpty() {
+        #expect(TryOnSession().fittingRoom.isEmpty)
+    }
+
+    @Test func addsPiecesToTheFittingRoomInOrder() throws {
+        let session = TryOnSession()
+        let jersey = try Fixtures.garment(id: "jersey", category: .top)
+        let jeans = try Fixtures.garment(id: "jeans", category: .bottom)
+        session.addToFittingRoom(jersey)
+        session.addToFittingRoom(jeans)
+        #expect(session.fittingRoom == [jersey, jeans])
+        #expect(session.isInFittingRoom(jersey))
+    }
+
+    @Test func aNewPieceReplacesTheOneInTheSameCategory() throws {
+        let session = TryOnSession()
+        let jersey = try Fixtures.garment(id: "jersey", category: .top)
+        let jeans = try Fixtures.garment(id: "jeans", category: .bottom)
+        let hoodie = try Fixtures.garment(id: "hoodie", category: .top)
+        session.addToFittingRoom(jersey)
+        session.addToFittingRoom(jeans)
+        session.addToFittingRoom(hoodie)
+        #expect(session.fittingRoom == [jeans, hoodie])
+        #expect(session.isInFittingRoom(jersey) == false)
+    }
+
+    @Test func removesAndClearsTheFittingRoom() throws {
+        let session = TryOnSession()
+        let jersey = try Fixtures.garment(id: "jersey", category: .top)
+        let jeans = try Fixtures.garment(id: "jeans", category: .bottom)
+        session.addToFittingRoom(jersey)
+        session.addToFittingRoom(jeans)
+        session.removeFromFittingRoom(jersey)
+        #expect(session.fittingRoom == [jeans])
+        session.clearFittingRoom()
+        #expect(session.fittingRoom.isEmpty)
+    }
+}

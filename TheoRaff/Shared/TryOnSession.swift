@@ -109,6 +109,29 @@ final class TryOnSession {
         }
     }
 
+    // MARK: Fitting room
+
+    /// Garments picked in the closet to try on together with AI, at most one per category,
+    /// in the order they were added.
+    private(set) var fittingRoom: [Garment] = []
+
+    func isInFittingRoom(_ garment: Garment) -> Bool {
+        fittingRoom.contains { $0.id == garment.id }
+    }
+
+    /// Adds a garment, taking out anything already there in the same category.
+    func addToFittingRoom(_ garment: Garment) {
+        fittingRoom = fittingRoom.filter { $0.category != garment.category && $0.id != garment.id } + [garment]
+    }
+
+    func removeFromFittingRoom(_ garment: Garment) {
+        fittingRoom = fittingRoom.filter { $0.id != garment.id }
+    }
+
+    func clearFittingRoom() {
+        fittingRoom = []
+    }
+
     private static func withoutDuplicates(_ garments: [Garment]) -> [Garment] {
         var seen = Set<String>()
         return garments.filter { seen.insert($0.id).inserted }

@@ -28,6 +28,13 @@ enum RenderStatus: Equatable, Sendable {
     case completed(URL)
 }
 
+/// The person a garment is rendered onto: a fresh photo, or the image from an earlier render,
+/// which is how a whole outfit goes on one piece at a time.
+enum RenderPerson: Sendable {
+    case photo(UIImage)
+    case url(URL)
+}
+
 /// Output shapes the model supports.
 enum RenderAspectRatio: String, Sendable {
     case square = "1:1"
@@ -75,7 +82,7 @@ struct RenderService: Sendable {
     /// Renders `clothing` onto the person in `person` and returns the finished image's URL.
     /// `onStatus` reports each progress check, for a "Buffering…" bar.
     func render(
-        person: UIImage,
+        person: RenderPerson,
         clothing: UIImage,
         preservePose: Bool = true,
         aspectRatio: RenderAspectRatio = .portrait,
@@ -85,14 +92,40 @@ struct RenderService: Sendable {
         return try await waitForImage(requestId: requestId, onStatus: onStatus)
     }
 
+    func render(
+        person: UIImage,
+        clothing: UIImage,
+        preservePose: Bool = true,
+        aspectRatio: RenderAspectRatio = .portrait,
+        onStatus: @escaping @Sendable (RenderStatus) -> Void = { _ in }
+    ) async throws -> URL {
+        try await render(person: .photo(person), clothing: clothing, preservePose: preservePose, aspectRatio: aspectRatio, onStatus: onStatus)
+    }
+
     func start(
         person: UIImage,
         clothing: UIImage,
         preservePose: Bool = true,
         aspectRatio: RenderAspectRatio = .portrait
     ) async throws -> String {
+        try await start(person: .photo(person), clothing: clothing, preservePose: preservePose, aspectRatio: aspectRatio)
+    }
+
+    /// Starts a render. An earlier render's image goes to the function as its https URL,
+    /// so it isn't downloaded and uploaded again.
+    func start(
+        person: RenderPerson,
+        clothing: UIImage,
+        preservePose: Bool = true,
+        aspectRatio: RenderAspectRatio = .portrait
+    ) async throws -> String {
+        let personImage: String
+        switch person {
+        case .photo(let photo): personImage = try RenderImageEncoder.dataURI(for: photo)
+        case .url(let url): personImage = url.absoluteString
+        }
         let payload: [String: Any] = [
-            "personImage": try RenderImageEncoder.dataURI(for: person),
+            "personImage": personImage,
             "clothingImage": try RenderImageEncoder.dataURI(for: clothing),
             "preservePose": preservePose,
             "aspectRatio": aspectRatio.rawValue,

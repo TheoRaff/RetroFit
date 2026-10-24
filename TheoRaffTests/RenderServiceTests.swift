@@ -82,6 +82,15 @@ struct RenderServiceTests {
         #expect(json["aspectRatio"] as? String == "9:16")
     }
 
+    @Test func startCanSendAnEarlierRenderAsThePerson() async throws {
+        let client = FakeRenderClient([(202, #"{"success":true,"data":{"requestId":"req-2"},"error":null}"#)])
+        let earlier = URL(string: "https://cdn.example.com/step-1.png")!
+        _ = try await service(client).start(person: .url(earlier), clothing: photo)
+        let json = try body(of: try #require(client.requests.first))
+        #expect(json["personImage"] as? String == earlier.absoluteString)
+        #expect((json["clothingImage"] as? String)?.hasPrefix("data:image/jpeg;base64,") == true)
+    }
+
     @Test func statusAsksForTheRequestWithTheToken() async throws {
         let client = FakeRenderClient([(200, #"{"success":true,"data":{"status":"IN_QUEUE","queuePosition":3},"error":null}"#)])
         let status = try await service(client).status(of: "req-1")
