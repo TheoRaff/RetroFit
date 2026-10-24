@@ -11,13 +11,14 @@ struct ARViewContainer: UIViewRepresentable {
     var preloadModels: [String] = []
     /// Receives the AR view so the screen can take photos of it.
     var snapshotter: ARSnapshotter? = nil
+    var isActive = true
 
     func makeCoordinator() -> Coordinator {
         Coordinator()
     }
 
     func makeUIView(context: Context) -> ARView {
-        let arView = ARView(frame: .zero)
+        let arView = ARView(frame: .zero, cameraMode: .ar, automaticallyConfigureSession: false)
         snapshotter?.arView = arView
 
         guard ARFaceTrackingConfiguration.isSupported else {
@@ -31,14 +32,19 @@ struct ARViewContainer: UIViewRepresentable {
 
         arView.session.delegate = context.coordinator
 
-        let configuration = ARFaceTrackingConfiguration()
-        arView.session.run(configuration)
+        context.coordinator.setActive(isActive)
 
         return arView
     }
 
     func updateUIView(_ uiView: ARView, context: Context) {
         context.coordinator.wear(glasses: glassesModel, hat: hatModel)
+        context.coordinator.setActive(isActive)
+    }
+
+    static func dismantleUIView(_ uiView: ARView, coordinator: Coordinator) {
+        uiView.session.pause()
+        uiView.session.delegate = nil
     }
 
     /// Hat models are built around a reference head in metres, with the origin halfway
@@ -65,6 +71,17 @@ struct ARViewContainer: UIViewRepresentable {
     final class Coordinator: NSObject, ARSessionDelegate {
         weak var arView: ARView?
         let library = FaceModelLibrary()
+        private var isActive = false
+
+        func setActive(_ active: Bool) {
+            guard active != isActive, let arView, ARFaceTrackingConfiguration.isSupported else { return }
+            isActive = active
+            if active {
+                arView.session.run(ARFaceTrackingConfiguration())
+            } else {
+                arView.session.pause()
+            }
+        }
 
         private enum Slot: CaseIterable {
             case glasses, hat

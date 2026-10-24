@@ -8,12 +8,14 @@ final class CameraController: NSObject, @unchecked Sendable {
         case notAllowed
         case unavailable
         case captureFailed
+        case torchUnavailable
 
         var errorDescription: String? {
             switch self {
             case .notAllowed: return "Allow camera access in Settings to take your try-on photo."
             case .unavailable: return "This device's camera isn't available."
             case .captureFailed: return "Couldn't take the photo. Try again."
+            case .torchUnavailable: return "The rear flashlight isn't available right now."
             }
         }
     }
@@ -36,6 +38,7 @@ final class CameraController: NSObject, @unchecked Sendable {
 
     func start(position: AVCaptureDevice.Position = .front) async throws {
         guard await Self.requestAccess() else { throw CameraError.notAllowed }
+        try Task.checkCancellation()
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             queue.async {
                 do {
@@ -56,11 +59,53 @@ final class CameraController: NSObject, @unchecked Sendable {
     }
 
     func stop() {
-        queue.async {
-            if self.session.isRunning {
-                self.session.stopRunning()
+        queue.async { self.stopOnQueue() }
+    }
+
+    /// Await release of the rear camera before starting the front AR session.
+    func stopAndWait() async {
+        await withCheckedContinuation { continuation in
+            queue.async {
+                self.stopOnQueue()
+                continuation.resume()
             }
         }
+    }
+
+    func setTorch(enabled: Bool) async throws {
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            queue.async {
+                do {
+                    guard let device = self.input?.device, device.hasTorch else {
+                        if enabled { throw CameraError.torchUnavailable }
+                        continuation.resume()
+                        return
+                    }
+                    guard !enabled || device.isTorchAvailable else { throw CameraError.torchUnavailable }
+                    try device.lockForConfiguration()
+                    defer { device.unlockForConfiguration() }
+                    if enabled {
+                        try device.setTorchModeOn(level: 0.75)
+                    } else {
+                        device.torchMode = .off
+                    }
+                    continuation.resume()
+                } catch {
+                    continuation.resume(throwing: error)
+                }
+            }
+        }
+    }
+
+    private func stopOnQueue() {
+        if let device = input?.device, device.hasTorch, (try? device.lockForConfiguration()) != nil {
+            device.torchMode = .off
+            device.unlockForConfiguration()
+        }
+        if session.isRunning { session.stopRunning() }
+        let capture = pendingCapture
+        pendingCapture = nil
+        capture?.resume(throwing: CameraError.captureFailed)
     }
 
     func capturePhoto() async throws -> UIImage {
