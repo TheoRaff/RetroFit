@@ -1,36 +1,53 @@
 import SwiftUI
 
-/// The "Buffering…" bar shown while the AI render runs.
+/// The "Buffering…" box shown while the AI render runs: a small Windows progress dialog
+/// with a row of navy blocks sweeping along a sunken track.
 struct BufferingBar: View {
     let text: String
 
-    @State private var sweep = false
+    private let blockWidth: CGFloat = 10
+    private let blockGap: CGFloat = 2
+    private let blockCount = 6
+    /// Points per second the blocks travel.
+    private let speed: CGFloat = 120
 
     var body: some View {
-        VStack(spacing: 10) {
-            GeometryReader { proxy in
-                let width = proxy.size.width
-                Capsule()
-                    .fill(.white.opacity(0.25))
-                    .overlay(alignment: .leading) {
-                        Capsule()
-                            .fill(LinearGradient(colors: [.white.opacity(0.2), .white, .white.opacity(0.2)], startPoint: .leading, endPoint: .trailing))
-                            .frame(width: width * 0.35)
-                            .offset(x: sweep ? width * 0.65 : 0)
-                    }
-                    .clipShape(Capsule())
+        VStack(spacing: 0) {
+            Win95TitleBar(title: "Buffering…", height: 32, centred: false)
+            VStack(alignment: .leading, spacing: 10) {
+                Text(text)
+                    .font(Win95.font(14))
+                    .foregroundStyle(Win95.text)
+                track
             }
-            .frame(height: 12)
+            .padding(12)
+        }
+        .padding(2)
+        .win95Raised()
+        .frame(maxWidth: 320)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(text)
+        .accessibilityAddTraits(.updatesFrequently)
+    }
 
-            Text(text)
-                .font(.headline.monospaced())
-                .foregroundStyle(.white)
-        }
-        .onAppear {
-            withAnimation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true)) {
-                sweep = true
+    private var track: some View {
+        TimelineView(.animation) { timeline in
+            Canvas { context, size in
+                let groupWidth = CGFloat(blockCount) * (blockWidth + blockGap)
+                let travel = size.width + groupWidth
+                let elapsed = CGFloat(timeline.date.timeIntervalSinceReferenceDate)
+                let start = (elapsed * speed).truncatingRemainder(dividingBy: travel) - groupWidth
+                for index in 0..<blockCount {
+                    let x = start + CGFloat(index) * (blockWidth + blockGap)
+                    let block = CGRect(x: x, y: 1, width: blockWidth, height: size.height - 2)
+                    context.fill(Path(block), with: .color(Win95.navy))
+                }
             }
         }
-        .accessibilityElement(children: .combine)
+        .frame(height: 20)
+        .padding(1)
+        .clipped()
+        .background(Win95.face)
+        .overlay(Win95Bevel(style: .thinSunken))
     }
 }

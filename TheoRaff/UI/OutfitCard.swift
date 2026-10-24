@@ -1,71 +1,89 @@
 import SwiftUI
 
-/// The card under the camera: what you're wearing, where you are in the deck, and the controls.
+/// The card under the camera: the look you're wearing with a photo of its main piece,
+/// where you are in the deck, and a button to the next look. The edges of the next cards
+/// peek out above it while there are more to come.
 struct OutfitCard: View {
     let outfit: Outfit
     let position: Int
     let total: Int
-    let isLiked: Bool
     let canGoBack: Bool
     let canGoForward: Bool
     let onBack: () -> Void
-    let onLike: () -> Void
     let onForward: () -> Void
-    
+
     var body: some View {
         HStack(spacing: 12) {
-            arrowButton(systemImage: "chevron.left", label: "Previous outfit", enabled: canGoBack, action: onBack)
-            
-            VStack(alignment: .leading, spacing: 4) {
+            thumbnail
+
+            VStack(alignment: .leading, spacing: 3) {
                 Text(outfit.name)
-                    .font(.headline)
+                    .font(Win95.font(17, bold: true, relativeTo: .headline))
                     .lineLimit(1)
+                    .minimumScaleFactor(0.8)
                 Text(outfit.garments.map(\.name).joined(separator: " · "))
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .font(Win95.font(14, relativeTo: .subheadline))
                     .lineLimit(1)
                 Text("\(position) of \(total)")
-                    .font(.caption.monospacedDigit())
-                    .foregroundStyle(.secondary)
+                    .font(Win95.font(12, relativeTo: .caption).monospacedDigit())
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 1)
+                    .overlay(Win95Bevel(style: .thinSunken))
             }
+            .foregroundStyle(Win95.text)
             .frame(maxWidth: .infinity, alignment: .leading)
-            
-            Button(action: onLike) {
-                Image(systemName: isLiked ? "heart.fill" : "heart")
-                    .font(.title2)
-                    .foregroundStyle(isLiked ? .pink : .primary)
-                    .frame(width: 48, height: 48)
+            .accessibilityElement(children: .combine)
+
+            Button(action: onForward) {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundStyle(canGoForward ? Win95.text : Win95.disabledText)
+                    .win95DisabledEmboss(!canGoForward)
+                    .frame(width: 34, height: 60, alignment: .trailing)
+                    .padding(.trailing, 3)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .accessibilityLabel(isLiked ? "Remove from closet" : "Save to closet")
-            
-            arrowButton(systemImage: "chevron.right", label: "Next outfit", enabled: canGoForward, action: onForward)
+            .disabled(!canGoForward)
+            .accessibilityLabel("Next look")
         }
-        .padding(12)
-        .background(
-            Color(red: 0.75, green: 0.69, blue: 0.61),
-            in: RoundedRectangle(cornerRadius: 4)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 4)
-                .stroke(
-                    Color(red: 0.40, green: 0.33, blue: 0.27).opacity(0.8),
-                    lineWidth: 1
-                )
-        )
+        .padding(.horizontal, 10)
+        .padding(.vertical, 11)
+        .win95Raised()
+        .background(alignment: .top) { deckEdges }
+        .accessibilityAction(named: "Previous look") {
+            if canGoBack { onBack() }
+        }
     }
-        
-        private func arrowButton(systemImage: String, label: String, enabled: Bool, action: @escaping () -> Void) -> some View {
-            Button(action: action) {
-                Image(systemName: systemImage)
-                    .font(.title3.weight(.semibold))
-                    .frame(width: 40, height: 48)
-                    .contentShape(Rectangle())
+
+    /// The main piece: the top if the look has one, otherwise its first garment.
+    private var thumbnail: some View {
+        let garment = outfit.garment(for: .top) ?? outfit.garments.first
+        return Color.clear
+            .frame(width: 78, height: 78)
+            .overlay {
+                if let garment, let image = ProductPhoto.named(garment.imageName) {
+                    Image(uiImage: image).resizable().scaledToFit().padding(5)
+                }
             }
-            .buttonStyle(.plain)
-            .disabled(!enabled)
-            .opacity(enabled ? 1 : 0.3)
-            .accessibilityLabel(label)
-        }
+            .win95Sunken()
+            .accessibilityHidden(true)
     }
+
+    /// Up to two card edges stacked behind, one per look still to come.
+    private var deckEdges: some View {
+        let cardsBehind = min(2, max(0, total - position))
+        return ZStack(alignment: .top) {
+            ForEach((1...2).reversed(), id: \.self) { depth in
+                if depth <= cardsBehind {
+                    Color.clear
+                        .frame(height: 20)
+                        .win95Raised()
+                        .padding(.horizontal, CGFloat(depth) * 8)
+                        .offset(y: CGFloat(depth) * -6)
+                }
+            }
+        }
+        .accessibilityHidden(true)
+    }
+}

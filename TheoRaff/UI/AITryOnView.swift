@@ -7,6 +7,7 @@ struct AITryOnView: View {
     @State private var camera = CameraController()
     @State private var cameraError: String?
     @State private var toast: String?
+    @State private var findIt: Garment?
 
     private let photoSaver = TryOnPhotoSaver(library: SystemPhotoLibrary())
 
@@ -22,13 +23,17 @@ struct AITryOnView: View {
         ZStack {
             Color.black.ignoresSafeArea()
             background
-            VStack {
-                topBar
+            VStack(spacing: 0) {
+                // Grey behind the status bar keeps its dark text readable over the camera.
+                titleBar
+                    .background(alignment: .top) { Win95.face.ignoresSafeArea(edges: .top) }
                 Spacer()
                 overlay
+                    .padding(16)
             }
-            .padding(16)
         }
+        .findItPrompt(for: $findIt)
+        .preferredColorScheme(.light)
         .task { await startCamera() }
         .onDisappear {
             model.cancel()
@@ -51,27 +56,24 @@ struct AITryOnView: View {
             AsyncImage(url: url) { image in
                 image.resizable().scaledToFit()
             } placeholder: {
-                ProgressView().tint(.white)
+                BufferingBar(text: "Downloading your picture…").padding(16)
             }
         case .failed:
             EmptyView()
         }
     }
 
-    private var topBar: some View {
-        HStack {
-            roundButton("xmark", label: "Close") { dismiss() }
-            Spacer()
-            Text(model.garment.name)
-                .font(.headline)
-                .foregroundStyle(.white)
-                .lineLimit(1)
-            Spacer()
-            roundButton("arrow.triangle.2.circlepath.camera", label: "Flip camera") {
-                Task { await flipCamera() }
+    /// A window caption with the garment's name, and flip-camera and close buttons on the right.
+    private var titleBar: some View {
+        Win95TitleBar(title: "AI Try On: \(model.garment.name)", centred: false) {
+            HStack(spacing: 2) {
+                if model.phase == .camera {
+                    captionButton("arrow.triangle.2.circlepath.camera", label: "Flip camera") {
+                        Task { await flipCamera() }
+                    }
+                }
+                captionButton("xmark", label: "Close") { dismiss() }
             }
-            .opacity(model.phase == .camera ? 1 : 0)
-            .disabled(model.phase != .camera)
         }
     }
 
@@ -81,21 +83,22 @@ struct AITryOnView: View {
         case .camera:
             VStack(spacing: 12) {
                 if let message = cameraError ?? toast {
-                    messageText(message)
+                    Win95Tooltip(text: message)
                 }
                 ShutterButton(isBusy: cameraError != nil) {
                     model.startCountdown { try await camera.capturePhoto() }
                 }
                 .accessibilityLabel("Start \(model.countdownSeconds) second timer")
                 Text("Tap to start a \(model.countdownSeconds)-second timer")
-                    .font(.footnote)
-                    .foregroundStyle(.white.opacity(0.8))
+                    .font(Win95.font(13, relativeTo: .footnote))
+                    .foregroundStyle(.white)
+                    .shadow(color: .black, radius: 0, x: 1, y: 1)
             }
         case .countdown(let seconds):
             Text("\(seconds)")
-                .font(.system(size: 120, weight: .heavy, design: .rounded))
+                .font(Win95.font(120, bold: true, relativeTo: .largeTitle))
                 .foregroundStyle(.white)
-                .shadow(radius: 8)
+                .shadow(color: .black, radius: 0, x: 4, y: 4)
                 .contentTransition(.numericText(countsDown: true))
                 .animation(.snappy, value: seconds)
                 .frame(maxHeight: .infinity)
@@ -104,7 +107,7 @@ struct AITryOnView: View {
                 .padding(.bottom, 40)
         case .result(let url):
             VStack(spacing: 12) {
-                if let toast { messageText(toast) }
+                if let toast { Win95Tooltip(text: toast) }
                 HStack(spacing: 12) {
                     pillButton("Retake", systemImage: "arrow.counterclockwise") { model.retake() }
                     pillButton("Save to Photos", systemImage: "square.and.arrow.down") {
@@ -112,19 +115,20 @@ struct AITryOnView: View {
                     }
                 }
                 HStack(spacing: 12) {
-                    FindItMenu(garment: model.garment) {
-                        pillLabel("Find it", systemImage: "bag")
-                    }
+                    pillButton("Find it", systemImage: "bag") { findIt = model.garment }
                     pillButton("Done", systemImage: "checkmark") { dismiss() }
                 }
             }
         case .failed(let message):
-            VStack(spacing: 12) {
-                messageText(message)
-                HStack(spacing: 12) {
-                    pillButton("Try again", systemImage: "arrow.counterclockwise") { model.retake() }
-                    pillButton("Close", systemImage: "xmark") { dismiss() }
-                }
+            Win95MessageBox(
+                title: "AI Try On",
+                message: message,
+                systemImage: "xmark.circle.fill",
+                iconColour: .red,
+                onClose: { dismiss() }
+            ) {
+                Win95DialogButton(title: "Try again", isDefault: true) { model.retake() }
+                Win95DialogButton(title: "Close") { dismiss() }
             }
             .frame(maxHeight: .infinity)
         }
@@ -164,40 +168,31 @@ struct AITryOnView: View {
 
     // MARK: Pieces
 
-    private func roundButton(_ systemImage: String, label: String, action: @escaping () -> Void) -> some View {
+    /// A small square button for the title bar, like a window's close box.
+    private func captionButton(_ systemImage: String, label: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: systemImage)
-                .font(.headline)
-                .foregroundStyle(.white)
-                .frame(width: 44, height: 44)
-                .background(.ultraThinMaterial, in: Circle())
+                .font(.system(size: 15, weight: .bold))
+                .frame(width: 38, height: 32)
         }
+        .buttonStyle(Win95ButtonStyle())
         .accessibilityLabel(label)
     }
 
     private func pillButton(_ title: String, systemImage: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            pillLabel(title, systemImage: systemImage)
+            buttonLabel(title, systemImage: systemImage)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(Win95ButtonStyle())
     }
 
-    private func pillLabel(_ title: String, systemImage: String) -> some View {
+    private func buttonLabel(_ title: String, systemImage: String) -> some View {
         Label(title, systemImage: systemImage)
-            .font(.headline)
-            .foregroundStyle(.white)
-            .padding(.horizontal, 18)
-            .padding(.vertical, 12)
-            .background(.ultraThinMaterial, in: Capsule())
-    }
-
-    private func messageText(_ text: String) -> some View {
-        Text(text)
-            .font(.subheadline.weight(.semibold))
-            .multilineTextAlignment(.center)
-            .foregroundStyle(.white)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
-            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14))
+            .labelStyle(Win95ButtonLabelStyle())
+            .font(Win95.font(15, bold: true, relativeTo: .headline))
+            .lineLimit(1)
+            .minimumScaleFactor(0.8)
+            .padding(.horizontal, 14)
+            .frame(maxWidth: .infinity, minHeight: 46)
     }
 }

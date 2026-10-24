@@ -6,98 +6,96 @@
 //
 
 import SwiftUI
-import UIKit
 
 struct AppShellView: View {
     let session: TryOnSession
 
     @State private var selectedTab = AppTab.tryOn
-
-    private var catalogGarments: [Garment] {
-        Catalog.bundled.garments
-    }
+    /// Set by the closet; the dialogs live here so they cover the tab bar too.
+    @State private var tryOnPrompt: Garment?
+    @State private var findIt: Garment?
 
     var body: some View {
         TabView(selection: $selectedTab) {
             ContentView(session: session)
-                .tabItem {
-                    Label("Try On", systemImage: "camera")
-                }
                 .tag(AppTab.tryOn)
 
-            ClosetView(garments: catalogGarments, session: session)
-                .tabItem {
-                    Label("Closet", systemImage: "hanger")
-                }
+            ClosetView(garments: Catalog.bundled.garments, session: session, tryOnPrompt: $tryOnPrompt, findIt: $findIt)
                 .tag(AppTab.closet)
 
             ProfileView(session: session)
-                .tabItem {
-                    Label("Profile", systemImage: "person")
-                }
                 .tag(AppTab.profile)
         }
         .toolbar(.hidden, for: .tabBar)
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            customTabBar
+            tabBar
         }
+        .aiTryOnPrompt(for: $tryOnPrompt)
+        .findItPrompt(for: $findIt)
+        .task { await ProductPhoto.preload(photoNames) }
+        // The Windows look is a fixed light theme. Dark only on Try On, so the status bar
+        // shows white over the camera, as in the mockup.
+        .preferredColorScheme(selectedTab == .tryOn ? .dark : .light)
     }
 
-    private var customTabBar: some View {
-        HStack(spacing: 4) {
+    /// Every garment photo, the first look's first so the Try On card fills in straight away.
+    private var photoNames: [String] {
+        let deck = session.outfits.flatMap(\.garments).map(\.imageName)
+        return deck + Catalog.bundled.garments.map(\.imageName)
+    }
+
+    /// The grey taskbar-style tab strip: the selected tab is pressed in, with the dither fill.
+    private var tabBar: some View {
+        HStack(spacing: 6) {
             tabButton(.tryOn, title: "Try On", symbol: "camera")
             tabButton(.closet, title: "Closet", symbol: "hanger")
             tabButton(.profile, title: "Profile", symbol: "person")
         }
-        .padding(.horizontal, 10)
-        .padding(.top, 8)
-        .padding(.bottom, 8)
-        .background(
-            Color(red: 0.64, green: 0.59, blue: 0.53)
-                .ignoresSafeArea(edges: .bottom)
-        )
+        .padding(.horizontal, 8)
+        .padding(.top, 6)
+        // The same height as the hidden system tab bar, which the pages still leave room for.
+        // The pressed tab hangs a little into the home indicator area, as in the mockup.
+        .frame(height: 49, alignment: .top)
+        .background(Win95.face.ignoresSafeArea(edges: .bottom))
+        // An etched line along the top edge.
+        .overlay(alignment: .top) {
+            VStack(spacing: 0) {
+                Win95.shadow.frame(height: 1)
+                Win95.highlight.frame(height: 1)
+            }
+        }
     }
 
-    private func tabButton(
-        _ tab: AppTab,
-        title: String,
-        symbol: String
-    ) -> some View {
+    private func tabButton(_ tab: AppTab, title: String, symbol: String) -> some View {
         let isSelected = selectedTab == tab
 
         return Button {
             selectedTab = tab
         } label: {
-            VStack(spacing: 4) {
+            VStack(spacing: 3) {
                 Image(systemName: symbol)
-                    .font(.system(size: 19, weight: .medium))
-
+                    .font(.system(size: 20, weight: .regular))
                 Text(title)
-                    .font(.caption2.weight(.semibold))
+                    .font(Win95.font(11, bold: isSelected, relativeTo: .caption))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
             }
-            .foregroundStyle(
-                isSelected
-                    ? Color(red: 0.18, green: 0.30, blue: 0.53)
-                    : Color.primary
-            )
-            .frame(maxWidth: .infinity)
-            .frame(height: 54)
+            .foregroundStyle(isSelected ? Win95.navy : Win95.text)
+            .frame(maxWidth: .infinity, minHeight: 48)
             .background {
                 if isSelected {
-                    RoundedRectangle(cornerRadius: 3)
-                        .fill(Color(red: 0.91, green: 0.89, blue: 0.85))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 3)
-                                .stroke(
-                                    Color(red: 0.40, green: 0.33, blue: 0.27),
-                                    lineWidth: 1
-                                )
-                        )
+                    Win95Dither()
+                }
+            }
+            .overlay {
+                if isSelected {
+                    Win95Bevel(style: .sunken)
                 }
             }
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }
 
@@ -105,204 +103,4 @@ private enum AppTab {
     case tryOn
     case closet
     case profile
-}
-
-private struct ClosetView: View {
-    let garments: [Garment]
-    let session: TryOnSession
-
-    @State private var searchText = ""
-    @State private var selectedCategory = ClosetCategory.all
-    @State private var tryOnPrompt: Garment?
-
-    private let columns = [
-        GridItem(.flexible(), spacing: 12),
-        GridItem(.flexible(), spacing: 12)
-    ]
-
-    private var filteredGarments: [Garment] {
-        garments.filter { garment in
-            let matchesCategory: Bool
-
-            switch selectedCategory {
-            case .all:
-                matchesCategory = true
-            case .tops:
-                matchesCategory = garment.category == .top
-            case .bottoms:
-                matchesCategory = garment.category == .bottom
-            case .head:
-                matchesCategory = garment.category == .headwear
-                    || garment.category == .eyewear
-            }
-
-            let searchableText = (
-                [garment.name, garment.searchQuery] + garment.tags
-            )
-            .joined(separator: " ")
-
-            let matchesSearch = searchText.isEmpty
-                || searchableText.localizedCaseInsensitiveContains(searchText)
-
-            return matchesCategory && matchesSearch
-        }
-    }
-
-    var body: some View {
-        NavigationStack {
-            VStack(spacing: 14) {
-                TextField("Search closet", text: $searchText)
-                    .textFieldStyle(.roundedBorder)
-
-                Picker("Category", selection: $selectedCategory) {
-                    ForEach(ClosetCategory.allCases) { category in
-                        Text(category.rawValue).tag(category)
-                    }
-                }
-                .pickerStyle(.segmented)
-
-                if filteredGarments.isEmpty {
-                    ContentUnavailableView(
-                        "No clothes found",
-                        systemImage: "tshirt",
-                        description: Text("Try another search or category.")
-                    )
-                } else {
-                    ScrollView {
-                        LazyVGrid(columns: columns, spacing: 12) {
-                            ForEach(filteredGarments) { garment in
-                                GarmentCard(garment: garment, session: session)
-                                    .contentShape(Rectangle())
-                                    .onTapGesture { tryOnPrompt = garment }
-                            }
-                        }
-                        .padding(.bottom, 12)
-                    }
-                }
-            }
-            .padding()
-            .background(Color(red: 0.64, green: 0.59, blue: 0.53))
-            .navigationTitle("Closet")
-            .aiTryOnPrompt(for: $tryOnPrompt)
-        }
-    }
-}
-
-private enum ClosetCategory: String, CaseIterable, Identifiable {
-    case all = "All"
-    case tops = "Tops"
-    case bottoms = "Bottoms"
-    case head = "Head"
-
-    var id: Self { self }
-}
-
-private struct GarmentCard: View {
-    let garment: Garment
-    let session: TryOnSession
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.white)
-                
-                if let image = UIImage(named: garment.imageName) {
-                    Image(uiImage: image)
-                        .resizable()
-                        .scaledToFit()
-                        .padding(10)
-                } else {
-                    Image(systemName: placeholderSymbol)
-                        .font(.system(size: 42))
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .frame(height: 145)
-            
-            HStack(alignment: .top, spacing: 6) {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(garment.name)
-                        .font(.headline)
-                        .lineLimit(2)
-                    
-                    Text(categoryName)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                
-                Spacer(minLength: 0)
-
-                FindItMenu(garment: garment) {
-                    Image(systemName: "bag")
-                }
-                .tint(.primary)
-
-                Button {
-                    if session.isLiked(garment) {
-                        session.unlike(garment)
-                    } else {
-                        session.like(garment)
-                    }
-                } label: {
-                    Image(systemName: session.isLiked(garment) ? "heart.fill" : "heart")
-                        .foregroundStyle(session.isLiked(garment) ? .pink : .primary)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(
-                    session.isLiked(garment) ? "Remove from saved items" : "Save item"
-                )
-            }
-        }
-        .padding(10)
-        .background(
-            Color(red: 0.75, green: 0.69, blue: 0.61),
-            in: RoundedRectangle(cornerRadius: 4)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 4)
-                .stroke(
-                    Color(red: 0.40, green: 0.33, blue: 0.27).opacity(0.8),
-                    lineWidth: 1
-                )
-        )
-    }
-
-    private var categoryName: String {
-        switch garment.category {
-        case .eyewear: "Head"
-        case .headwear: "Head"
-        case .top: "Top"
-        case .bottom: "Bottom"
-        case .fullLook: "Look"
-        }
-    }
-
-    private var placeholderSymbol: String {
-        switch garment.category {
-        case .eyewear: "eyeglasses"
-        case .headwear: "person.crop.circle"
-        case .top: "tshirt"
-        case .bottom: "figure.walk"
-        case .fullLook: "sparkles"
-        }
-    }
-}
-
-private struct ProfileView: View {
-    let session: TryOnSession
-
-    var body: some View {
-        NavigationStack {
-            List {
-                Section("Your style") {
-                    LabeledContent(
-                        "Liked garments",
-                        value: "\(session.closet.count)"
-                    )
-                }
-            }
-            .navigationTitle("Profile")
-        }
-    }
 }

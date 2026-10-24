@@ -7,6 +7,9 @@ struct ARViewContainer: UIViewRepresentable {
     let modelName: String?
     /// Receives the AR view so the screen can take photos of it.
     var snapshotter: ARSnapshotter? = nil
+    /// Called on the main thread with the glasses' frame in this view's coordinates as the
+    /// face moves, or nil when there are no glasses or the face is lost.
+    var onGlassesFrame: ((CGRect?) -> Void)? = nil
 
     func makeCoordinator() -> Coordinator {
         Coordinator()
@@ -15,6 +18,7 @@ struct ARViewContainer: UIViewRepresentable {
     func makeUIView(context: Context) -> ARView {
         let arView = ARView(frame: .zero)
         snapshotter?.arView = arView
+        context.coordinator.onGlassesFrame = onGlassesFrame
 
         guard ARFaceTrackingConfiguration.isSupported else {
             print("Face tracking is not supported.")
@@ -33,11 +37,14 @@ struct ARViewContainer: UIViewRepresentable {
     }
 
     func updateUIView(_ uiView: ARView, context: Context) {
+        context.coordinator.onGlassesFrame = onGlassesFrame
         context.coordinator.setModel(modelName)
     }
 
     class Coordinator: NSObject, ARSessionDelegate {
         weak var arView: ARView?
+        var onGlassesFrame: ((CGRect?) -> Void)?
+        private var reportedGlassesFrame: CGRect?
 
         private var faceEntity: AnchorEntity?
         private var glassesEntity: Entity?
@@ -92,6 +99,7 @@ struct ARViewContainer: UIViewRepresentable {
             }
             glassesEntity = nil
             glassesBaseWidth = 0
+            reportGlassesFrame(nil)
 
             guard let selectedModelName else {
                 return
@@ -118,8 +126,10 @@ struct ARViewContainer: UIViewRepresentable {
 
         private func fitGlasses(to faceAnchor: ARFaceAnchor) {
             guard let glassesEntity, glassesBaseWidth > 0 else {
+                reportGlassesFrame(nil)
                 return
             }
+            defer { reportGlassesFrame(faceAnchor.isTracked ? screenFrame(of: glassesEntity) : nil) }
 
             let left = faceAnchor.leftEyeTransform.columns.3
             let right = faceAnchor.rightEyeTransform.columns.3
@@ -137,6 +147,44 @@ struct ARViewContainer: UIViewRepresentable {
                 eyeMidpoint.y - glassesBoundsCenter.y * scale,
                 eyeMidpoint.z - glassesBoundsCenter.z * scale - 0.035
             )
+        }
+
+        /// The box on screen around the entity's 3D bounds, or nil if any corner is behind the camera.
+        /// The bounds are taken in the entity's own space and turned with it, so a tilted head
+        /// doesn't swell the box the way a world-aligned box would.
+        private func screenFrame(of entity: Entity) -> CGRect? {
+            guard let arView else { return nil }
+            let bounds = entity.visualBounds(relativeTo: entity)
+            let (low, high) = (bounds.min, bounds.max)
+            let corners = [low.x, high.x].flatMap { x in
+                [low.y, high.y].flatMap { y in
+                    [low.z, high.z].map { z in entity.convert(position: SIMD3<Float>(x, y, z), to: nil) }
+                }
+            }
+            let points = corners.compactMap { arView.project($0) }
+            guard points.count == corners.count,
+                  let minX = points.map(\.x).min(), let maxX = points.map(\.x).max(),
+                  let minY = points.map(\.y).min(), let maxY = points.map(\.y).max() else {
+                return nil
+            }
+            return CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
+        }
+
+        /// Passes the frame on, skipping sub-point jitter so SwiftUI only redraws on real movement.
+        private func reportGlassesFrame(_ frame: CGRect?) {
+            let moved: Bool
+            switch (frame, reportedGlassesFrame) {
+            case (nil, nil):
+                moved = false
+            case let (new?, old?):
+                moved = abs(new.minX - old.minX) >= 0.5 || abs(new.minY - old.minY) >= 0.5
+                    || abs(new.width - old.width) >= 0.5 || abs(new.height - old.height) >= 0.5
+            default:
+                moved = true
+            }
+            guard moved else { return }
+            reportedGlassesFrame = frame
+            onGlassesFrame?(frame)
         }
     }
 }
