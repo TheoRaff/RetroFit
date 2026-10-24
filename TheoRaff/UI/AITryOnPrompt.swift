@@ -2,8 +2,8 @@ import SwiftUI
 
 extension View {
     /// When `look` is set, asks "Try this on with AI?" in a Windows message box and, if the
-    /// user agrees, opens the AI try-on camera for it. For a single piece of clothing it also
-    /// offers to add it to the session's fitting room, to try on with other pieces.
+    /// user agrees, opens the AI try-on camera for it. For a single piece it also offers to add
+    /// it to the session's fitting room, to try on with other pieces and accessories.
     func aiTryOnPrompt(for look: Binding<AITryOnLook?>, session: TryOnSession) -> some View {
         modifier(AITryOnPrompt(look: look, session: session))
     }
@@ -45,14 +45,13 @@ private struct AITryOnPrompt: ViewModifier {
         guard look.pieceCount > 1 else {
             return "Take a photo and see yourself wearing \(look.title)."
         }
-        let names = look.garments.map(\.name).joined(separator: " and ")
+        let names = look.garments.map(\.name)
+            .formatted(.list(type: .and, width: .standard))
         return "Take a photo and see yourself wearing the \(names). That's \(look.pieceCount) renders, one after the other, so it takes a little longer."
     }
 
-    /// The garment to offer "Add to outfit" for: a single piece of clothing, not shades or a hat.
+    /// The garment to offer "Add to outfit" for: any single piece, clothes or accessories.
     private func addablePiece(of look: AITryOnLook) -> Garment? {
-        guard look.pieceCount == 1, let garment = look.garments.first,
-              garment.category.liveStyle != .faceModel else { return nil }
-        return garment
+        look.pieceCount == 1 ? look.garments.first : nil
     }
 }

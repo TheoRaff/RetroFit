@@ -7,13 +7,14 @@ enum GarmentCategory: String, Codable, CaseIterable, Sendable {
     case top
     case bottom
     case fullLook
+    case shoes
 
     /// How the live camera view shows garments of this category.
     var liveStyle: LiveStyle {
         switch self {
         case .eyewear, .headwear: return .faceModel
         case .top: return .bodyCutout
-        case .bottom, .fullLook: return .renderOnly
+        case .bottom, .fullLook, .shoes: return .renderOnly
         }
     }
 }

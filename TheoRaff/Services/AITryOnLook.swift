@@ -5,7 +5,8 @@ import Foundation
 struct AITryOnLook: Identifiable, Equatable, Sendable {
     let id: String
     let title: String
-    /// Render order: a full look first, then the top, then the bottoms.
+    /// Render order: clothes first (a full look, the top, the bottoms), then shoes and the
+    /// accessories that sit over them (a hat, then glasses).
     let garments: [Garment]
 
     var pieceCount: Int { garments.count }
@@ -15,11 +16,10 @@ struct AITryOnLook: Identifiable, Equatable, Sendable {
         self.init(id: garment.id, title: garment.name, garments: [garment])
     }
 
-    /// A look from the deck. Shades and hats are left out when there are clothes to render,
-    /// since the live view already shows them and the AI model is for clothing.
+    /// A look from the deck, every piece in it, accessories included, since the AI camera's
+    /// photo doesn't have the live view's 3D glasses on it.
     init(outfit: Outfit) {
-        let clothes = outfit.garments.filter { $0.category.liveStyle != .faceModel }
-        self.init(id: outfit.id, title: outfit.name, garments: Self.renderOrder(clothes.isEmpty ? outfit.garments : clothes))
+        self.init(id: outfit.id, title: outfit.name, garments: Self.renderOrder(outfit.garments))
     }
 
     /// A mix of garments, such as the closet's fitting room.
@@ -36,7 +36,7 @@ struct AITryOnLook: Identifiable, Equatable, Sendable {
 
     /// Bigger pieces go on first so the smaller ones layer over them.
     private static func renderOrder(_ garments: [Garment]) -> [Garment] {
-        let rank: [GarmentCategory: Int] = [.fullLook: 0, .top: 1, .bottom: 2, .headwear: 3, .eyewear: 4]
+        let rank: [GarmentCategory: Int] = [.fullLook: 0, .top: 1, .bottom: 2, .shoes: 3, .headwear: 4, .eyewear: 5]
         return garments.enumerated()
             .sorted { ((rank[$0.element.category] ?? 9), $0.offset) < ((rank[$1.element.category] ?? 9), $1.offset) }
             .map(\.element)

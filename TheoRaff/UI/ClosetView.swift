@@ -49,7 +49,7 @@ struct ClosetView: View {
 
             VStack(spacing: 8) {
                 Win95SearchField(prompt: "Search closet", text: $searchText)
-                Win95SegmentedPicker(options: ClosetCategory.allCases, selection: $selectedCategory) { $0.rawValue }
+                Win95SegmentedPicker(options: ClosetCategory.available(for: garments), selection: $selectedCategory) { $0.rawValue }
                 garmentList
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .padding(2)
@@ -143,6 +143,7 @@ private enum ClosetCategory: String, CaseIterable, Identifiable {
     case tops = "Tops"
     case bottoms = "Bottoms"
     case head = "Head"
+    case shoes = "Shoes"
 
     var id: Self { self }
 
@@ -152,7 +153,13 @@ private enum ClosetCategory: String, CaseIterable, Identifiable {
         case .tops: category == .top
         case .bottoms: category == .bottom
         case .head: category == .headwear || category == .eyewear
+        case .shoes: category == .shoes
         }
+    }
+
+    /// The filters worth showing: Shoes only once the catalog has some.
+    static func available(for garments: [Garment]) -> [ClosetCategory] {
+        allCases.filter { $0 != .shoes || garments.contains { $0.category == .shoes } }
     }
 }
 
@@ -245,6 +252,7 @@ private struct GarmentCard: View {
         case .top: "Top"
         case .bottom: "Bottom"
         case .fullLook: "Look"
+        case .shoes: "Shoes"
         }
     }
 
@@ -255,6 +263,7 @@ private struct GarmentCard: View {
         case .top: "tshirt"
         case .bottom: "figure.walk"
         case .fullLook: "sparkles"
+        case .shoes: "shoe"
         }
     }
 }
