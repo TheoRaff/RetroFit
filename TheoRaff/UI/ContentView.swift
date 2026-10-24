@@ -7,7 +7,6 @@ struct ContentView: View {
     let session: TryOnSession
 
     @State private var snapshotter = ARSnapshotter()
-    @State private var glasses = GlassesTracker()
     @State private var isCapturing = false
     @State private var showFlash = false
     @State private var toast: String?
@@ -21,13 +20,9 @@ struct ContentView: View {
         ZStack(alignment: .bottom) {
             ARViewContainer(
                 modelName: session.currentOutfit?.garment(for: .eyewear)?.modelName,
-                snapshotter: snapshotter,
-                onGlassesFrame: { [glasses] frame in glasses.frame = frame }
+                snapshotter: snapshotter
             )
             .ignoresSafeArea()
-            .overlay {
-                GlassesMarquee(tracker: glasses).ignoresSafeArea()
-            }
 
             // The AR view takes touches for itself, so swipes land on this layer above it.
             Color.clear
