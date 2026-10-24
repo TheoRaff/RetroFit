@@ -43,8 +43,34 @@ struct BundledCatalogTests {
         #expect(firstID == catalog.outfits.first?.id)
     }
 
-    @Test func testTeeHasAProductPhotoForAITryOn() throws {
-        let tee = try #require(catalog.garments.first { $0.id == "fal-test-tee" })
-        #expect(UIImage(named: tee.imageName) != nil)
+    @Test func hasTopsAndBottomsToRender() {
+        let categories = Set(catalog.garments.map(\.category))
+        #expect(categories.isSuperset(of: [.top, .bottom]))
+    }
+
+    /// The closet shows this photo and the AI try-on sends it, so every garment needs one.
+    @Test func everyGarmentHasAProductPhoto() {
+        for garment in catalog.garments {
+            #expect(UIImage(named: garment.imageName) != nil, "No product photo for \(garment.id)")
+        }
+    }
+
+    /// tools/prep-garment.swift draws every cutout on the shared canvas.
+    @Test func productPhotosUseTheSharedCanvas() {
+        for garment in catalog.garments {
+            guard let image = UIImage(named: garment.imageName) else { continue }
+            let pixels = CGSize(width: image.size.width * image.scale, height: image.size.height * image.scale)
+            #expect(pixels == GarmentCanvas.size, "\(garment.id) is \(pixels), not on the shared canvas")
+        }
+    }
+
+    @Test func shipsNoTestGarments() {
+        #expect(catalog.garments.filter { $0.tags.contains("test") }.map(\.id) == [])
+    }
+
+    @Test func canvasShouldersAreLevelAndCentred() {
+        let middle = (GarmentCanvas.leftShoulder.x + GarmentCanvas.rightShoulder.x) / 2
+        #expect(GarmentCanvas.leftShoulder.y == GarmentCanvas.rightShoulder.y)
+        #expect(middle == GarmentCanvas.size.width / 2)
     }
 }

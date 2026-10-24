@@ -19,26 +19,76 @@
       "tags": ["mcbling"]
     },
     {
-      "id": "fal-test-tee",
-      "name": "Test Tee (fal sample)",
-      "category": "top",
-      "imageName": "fal-test-tee",
-      "searchQuery": "black graphic tee",
-      "tags": ["test"]
-    },
-    {
       "id": "pink-velour-hoodie",
       "name": "Pink Velour Hoodie",
       "category": "top",
       "imageName": "pink-velour-hoodie",
       "searchQuery": "y2k pink velour zip hoodie",
+      "tags": ["mcbling", "loungewear"]
+    },
+    {
+      "id": "ed-hardy-track-jacket",
+      "name": "Ed Hardy Track Jacket",
+      "category": "top",
+      "imageName": "ed-hardy-track-jacket",
+      "searchQuery": "y2k ed hardy cropped track jacket",
+      "tags": ["mcbling", "sporty"]
+    },
+    {
+      "id": "butterfly-baby-tee",
+      "name": "Butterfly Baby Tee",
+      "category": "top",
+      "imageName": "butterfly-baby-tee",
+      "searchQuery": "y2k butterfly baby tee",
       "tags": ["mcbling"]
+    },
+    {
+      "id": "leopard-satin-halter",
+      "name": "Leopard Satin Halter",
+      "category": "top",
+      "imageName": "leopard-satin-halter",
+      "searchQuery": "y2k leopard satin halter top",
+      "tags": ["going-out"]
+    },
+    {
+      "id": "mesh-long-sleeve-top",
+      "name": "Floral Mesh Top",
+      "category": "top",
+      "imageName": "mesh-long-sleeve-top",
+      "searchQuery": "y2k mesh long sleeve top",
+      "tags": ["going-out", "cyber"]
+    },
+    {
+      "id": "ringer-baby-tee",
+      "name": "Ringer Baby Tee",
+      "category": "top",
+      "imageName": "ringer-baby-tee",
+      "searchQuery": "y2k ringer baby tee",
+      "tags": ["indie"]
+    },
+    {
+      "id": "low-rise-flare-jeans",
+      "name": "Low-Rise Flare Jeans",
+      "category": "bottom",
+      "imageName": "low-rise-flare-jeans",
+      "searchQuery": "y2k low rise flare jeans",
+      "tags": ["denim"]
+    },
+    {
+      "id": "pleated-mini-skirt",
+      "name": "Pleated Mini Skirt",
+      "category": "bottom",
+      "imageName": "pleated-mini-skirt",
+      "searchQuery": "y2k pleated mini skirt",
+      "tags": ["preppy"]
     }
   ],
   "outfits": [
-    { "id": "sport-shades-look", "name": "Sport Shades", "garmentIDs": ["y2k-sport-shades"] },
-    { "id": "white-shades-look", "name": "White Shades", "garmentIDs": ["white-shades"] },
-    { "id": "fal-test-tee-look", "name": "Test Tee", "garmentIDs": ["fal-test-tee"] },
-    { "id": "velour-hoodie-look", "name": "Pink Velour Hoodie", "garmentIDs": ["pink-velour-hoodie"] }
+    { "id": "velour-hour", "name": "Velour Hour", "garmentIDs": ["pink-velour-hoodie", "low-rise-flare-jeans", "white-shades"] },
+    { "id": "tattoo-parlour", "name": "Tattoo Parlour", "garmentIDs": ["ed-hardy-track-jacket", "pleated-mini-skirt", "y2k-sport-shades"] },
+    { "id": "butterfly-baby", "name": "Butterfly Baby", "garmentIDs": ["butterfly-baby-tee", "low-rise-flare-jeans", "y2k-sport-shades"] },
+    { "id": "leopard-night-out", "name": "Leopard Night Out", "garmentIDs": ["leopard-satin-halter", "pleated-mini-skirt", "white-shades"] },
+    { "id": "mesh-moment", "name": "Mesh Moment", "garmentIDs": ["mesh-long-sleeve-top", "low-rise-flare-jeans", "y2k-sport-shades"] },
+    { "id": "ringer-rewind", "name": "Ringer Rewind", "garmentIDs": ["ringer-baby-tee", "pleated-mini-skirt", "white-shades"] }
   ]
 }

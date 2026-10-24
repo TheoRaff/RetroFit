@@ -1,0 +1,12 @@
+{
+  "images" : [
+    {
+      "filename" : "y2k-sport-shades.png",
+      "idiom" : "universal"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}
