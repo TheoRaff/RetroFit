@@ -19,6 +19,42 @@
       "tags": ["mcbling"]
     },
     {
+      "id": "pink-leopard-bucket-hat",
+      "name": "Pink Leopard Bucket Hat",
+      "category": "headwear",
+      "imageName": "pink-leopard-bucket-hat",
+      "modelName": "Y2K_Leopard_Bucket_Hat",
+      "searchQuery": "y2k pink leopard fuzzy bucket hat",
+      "tags": ["mcbling"]
+    },
+    {
+      "id": "retrofit-trucker-cap",
+      "name": "Pink Trucker Cap",
+      "category": "headwear",
+      "imageName": "retrofit-trucker-cap",
+      "modelName": "Y2K_Trucker_Cap",
+      "searchQuery": "y2k pink trucker hat",
+      "tags": ["mcbling", "sporty"]
+    },
+    {
+      "id": "baby-blue-slouch-beanie",
+      "name": "Baby Blue Slouch Beanie",
+      "category": "headwear",
+      "imageName": "baby-blue-slouch-beanie",
+      "modelName": "Y2K_Slouch_Beanie",
+      "searchQuery": "y2k baby blue slouchy beanie",
+      "tags": ["skater", "indie"]
+    },
+    {
+      "id": "scene-stripe-beanie",
+      "name": "Scene Stripe Beanie",
+      "category": "headwear",
+      "imageName": "scene-stripe-beanie",
+      "modelName": "Y2K_Stripe_Pom_Beanie",
+      "searchQuery": "y2k black pink striped pom pom beanie",
+      "tags": ["scene", "emo"]
+    },
+    {
       "id": "pink-velour-hoodie",
       "name": "Pink Velour Hoodie",
       "category": "top",
@@ -140,12 +176,12 @@
     }
   ],
   "outfits": [
-    { "id": "velour-hour", "name": "Velour Hour", "garmentIDs": ["pink-velour-hoodie", "low-rise-flare-jeans", "white-shades"] },
-    { "id": "tattoo-parlour", "name": "Tattoo Parlour", "garmentIDs": ["ed-hardy-track-jacket", "pleated-mini-skirt", "y2k-sport-shades"] },
+    { "id": "velour-hour", "name": "Velour Hour", "garmentIDs": ["pink-velour-hoodie", "low-rise-flare-jeans", "white-shades", "pink-leopard-bucket-hat"] },
+    { "id": "tattoo-parlour", "name": "Tattoo Parlour", "garmentIDs": ["ed-hardy-track-jacket", "pleated-mini-skirt", "y2k-sport-shades", "retrofit-trucker-cap"] },
     { "id": "butterfly-baby", "name": "Butterfly Baby", "garmentIDs": ["butterfly-baby-tee", "low-rise-flare-jeans", "y2k-sport-shades"] },
     { "id": "leopard-night-out", "name": "Leopard Night Out", "garmentIDs": ["leopard-satin-halter", "pleated-mini-skirt", "white-shades"] },
-    { "id": "mesh-moment", "name": "Mesh Moment", "garmentIDs": ["mesh-long-sleeve-top", "low-rise-flare-jeans", "y2k-sport-shades"] },
-    { "id": "ringer-rewind", "name": "Ringer Rewind", "garmentIDs": ["ringer-baby-tee", "pleated-mini-skirt", "white-shades"] },
+    { "id": "mesh-moment", "name": "Mesh Moment", "garmentIDs": ["mesh-long-sleeve-top", "low-rise-flare-jeans", "y2k-sport-shades", "scene-stripe-beanie"] },
+    { "id": "ringer-rewind", "name": "Ringer Rewind", "garmentIDs": ["ringer-baby-tee", "pleated-mini-skirt", "white-shades", "baby-blue-slouch-beanie"] },
     { "id": "court-kings", "name": "Court Kings", "garmentIDs": ["basketball-jersey", "baggy-jeans", "y2k-sport-shades"] },
     { "id": "flame-on", "name": "Flame On", "garmentIDs": ["bowling-shirt", "camo-cargo-shorts", "white-shades"] },
     { "id": "chrome-club", "name": "Chrome Club", "garmentIDs": ["metallic-halter-top", "denim-mini-skirt", "white-shades"] },

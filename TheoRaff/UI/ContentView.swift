@@ -21,7 +21,8 @@ struct ContentView: View {
     var body: some View {
         ZStack(alignment: .bottom) {
             ARViewContainer(
-                modelName: session.currentOutfit?.garment(for: .eyewear)?.modelName,
+                glassesModel: session.currentOutfit?.garment(for: .eyewear)?.modelName,
+                hatModel: session.currentOutfit?.garment(for: .headwear)?.modelName,
                 snapshotter: snapshotter
             )
             .ignoresSafeArea()

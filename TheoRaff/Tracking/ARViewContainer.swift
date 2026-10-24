@@ -3,8 +3,10 @@ import RealityKit
 import ARKit
 
 struct ARViewContainer: UIViewRepresentable {
-    /// USDZ model to wear on the face, or nil to show no glasses.
-    let modelName: String?
+    /// USDZ model to wear over the eyes, or nil to show no glasses.
+    let glassesModel: String?
+    /// USDZ model to wear on the head, or nil to show no hat.
+    var hatModel: String? = nil
     /// Receives the AR view so the screen can take photos of it.
     var snapshotter: ARSnapshotter? = nil
 
@@ -22,7 +24,7 @@ struct ARViewContainer: UIViewRepresentable {
         }
 
         context.coordinator.arView = arView
-        context.coordinator.setModel(modelName)
+        context.coordinator.setModels(glasses: glassesModel, hat: hatModel)
 
         arView.session.delegate = context.coordinator
 
@@ -33,7 +35,25 @@ struct ARViewContainer: UIViewRepresentable {
     }
 
     func updateUIView(_ uiView: ARView, context: Context) {
-        context.coordinator.setModel(modelName)
+        context.coordinator.setModels(glasses: glassesModel, hat: hatModel)
+    }
+
+    /// Hat models are built around a reference head in metres, with the origin halfway
+    /// between the eyes, +y up and +z out of the face. They only need moving to the
+    /// wearer's eyes and scaling to the size of their head.
+    enum HatFit {
+        /// Distance between the eyes on the reference head.
+        static let referenceEyeDistance: Float = 0.063
+        /// Keeps a bad eye reading from shrinking or ballooning the hat.
+        static let scaleRange: ClosedRange<Float> = 0.85...1.2
+        /// The reference head as an ellipsoid, slightly inside the hats so it hides the
+        /// parts behind the wearer's head (the far side of the brim and the inside).
+        static let headCentre = SIMD3<Float>(0, 0.015, -0.085)
+        static let headRadii = SIMD3<Float>(0.075, 0.099, 0.094)
+
+        static func scale(eyeDistance: Float) -> Float {
+            min(max(eyeDistance / referenceEyeDistance, scaleRange.lowerBound), scaleRange.upperBound)
+        }
     }
 
     class Coordinator: NSObject, ARSessionDelegate {
@@ -43,14 +63,18 @@ struct ARViewContainer: UIViewRepresentable {
         private var glassesEntity: Entity?
         private var glassesBaseWidth: Float = 0
         private var glassesBoundsCenter = SIMD3<Float>(repeating: 0)
-        private var selectedModelName: String?
+        private var hatEntity: Entity?
+        private var selectedGlasses: String?
+        private var selectedHat: String?
 
-        func setModel(_ name: String?) {
-            guard selectedModelName != name else { return }
-            selectedModelName = name
-
-            if faceEntity != nil {
-                loadSelectedModel()
+        func setModels(glasses: String?, hat: String?) {
+            if selectedGlasses != glasses {
+                selectedGlasses = glasses
+                if faceEntity != nil { loadGlasses() }
+            }
+            if selectedHat != hat {
+                selectedHat = hat
+                if faceEntity != nil { loadHat() }
             }
         }
 
@@ -68,7 +92,8 @@ struct ARViewContainer: UIViewRepresentable {
                 let newFaceEntity = AnchorEntity(anchor: faceAnchor)
                 self.faceEntity = newFaceEntity
                 arView.scene.addAnchor(newFaceEntity)
-                self.loadSelectedModel()
+                self.loadGlasses()
+                self.loadHat()
             }
         }
 
@@ -79,10 +104,11 @@ struct ARViewContainer: UIViewRepresentable {
 
             DispatchQueue.main.async { [weak self] in
                 self?.fitGlasses(to: faceAnchor)
+                self?.fitHat(to: faceAnchor)
             }
         }
 
-        private func loadSelectedModel() {
+        private func loadGlasses() {
             guard let faceEntity else {
                 return
             }
@@ -93,12 +119,12 @@ struct ARViewContainer: UIViewRepresentable {
             glassesEntity = nil
             glassesBaseWidth = 0
 
-            guard let selectedModelName else {
+            guard let selectedGlasses else {
                 return
             }
 
             do {
-                let glasses = try Entity.load(named: selectedModelName)
+                let glasses = try Entity.load(named: selectedGlasses)
                 let bounds = glasses.visualBounds(relativeTo: glasses)
 
                 guard bounds.extents.x > 0 else {
@@ -112,8 +138,46 @@ struct ARViewContainer: UIViewRepresentable {
                 faceEntity.addChild(glasses)
                 glassesEntity = glasses
             } catch {
-                print("Could not load glasses model \(selectedModelName): \(error)")
+                print("Could not load glasses model \(selectedGlasses): \(error)")
             }
+        }
+
+        private func loadHat() {
+            guard let faceEntity else {
+                return
+            }
+
+            if let hatEntity {
+                faceEntity.removeChild(hatEntity)
+            }
+            hatEntity = nil
+
+            guard let selectedHat else {
+                return
+            }
+
+            do {
+                let hat = try Entity.load(named: selectedHat)
+                let head = ModelEntity(mesh: .generateSphere(radius: 1), materials: [OcclusionMaterial()])
+                head.position = HatFit.headCentre
+                head.scale = HatFit.headRadii
+
+                // Hidden until the first face update puts it on the head.
+                let holder = Entity()
+                holder.isEnabled = false
+                holder.addChild(hat)
+                holder.addChild(head)
+                faceEntity.addChild(holder)
+                hatEntity = holder
+            } catch {
+                print("Could not load hat model \(selectedHat): \(error)")
+            }
+        }
+
+        private func eyePositions(of faceAnchor: ARFaceAnchor) -> (left: SIMD3<Float>, right: SIMD3<Float>) {
+            let left = faceAnchor.leftEyeTransform.columns.3
+            let right = faceAnchor.rightEyeTransform.columns.3
+            return (SIMD3<Float>(left.x, left.y, left.z), SIMD3<Float>(right.x, right.y, right.z))
         }
 
         private func fitGlasses(to faceAnchor: ARFaceAnchor) {
@@ -121,11 +185,7 @@ struct ARViewContainer: UIViewRepresentable {
                 return
             }
 
-            let left = faceAnchor.leftEyeTransform.columns.3
-            let right = faceAnchor.rightEyeTransform.columns.3
-
-            let leftEye = SIMD3<Float>(left.x, left.y, left.z)
-            let rightEye = SIMD3<Float>(right.x, right.y, right.z)
+            let (leftEye, rightEye) = eyePositions(of: faceAnchor)
             let eyeMidpoint = (leftEye + rightEye) / 2
 
             let targetWidth = simd_distance(leftEye, rightEye) * 2.2
@@ -137,6 +197,17 @@ struct ARViewContainer: UIViewRepresentable {
                 eyeMidpoint.y - glassesBoundsCenter.y * scale,
                 eyeMidpoint.z - glassesBoundsCenter.z * scale - 0.035
             )
+        }
+
+        private func fitHat(to faceAnchor: ARFaceAnchor) {
+            guard let hatEntity else {
+                return
+            }
+
+            let (leftEye, rightEye) = eyePositions(of: faceAnchor)
+            hatEntity.scale = SIMD3<Float>(repeating: HatFit.scale(eyeDistance: simd_distance(leftEye, rightEye)))
+            hatEntity.position = (leftEye + rightEye) / 2
+            hatEntity.isEnabled = true
         }
     }
 }
