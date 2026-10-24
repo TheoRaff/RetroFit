@@ -24,6 +24,14 @@ struct BundledCatalogTests {
         #expect(models.isSuperset(of: ["Y2K_Sport_Sunglass", "White_sunglasses"]))
     }
 
+    /// A deck look shows glasses or a hat, not both. Both together only when someone picks them.
+    @Test func deckLooksWearOneFaceItem() {
+        for outfit in catalog.outfits {
+            let faceItems = outfit.garments.filter { $0.category.liveStyle == .faceModel }
+            #expect(faceItems.count <= 1, "\(outfit.id) wears \(faceItems.map(\.id))")
+        }
+    }
+
     @Test func everyFaceModelShipsInTheApp() {
         for name in catalog.garments.compactMap(\.modelName) {
             #expect(Bundle.main.url(forResource: name, withExtension: "usdz") != nil, "Missing \(name).usdz")

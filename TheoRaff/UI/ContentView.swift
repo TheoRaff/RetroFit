@@ -23,6 +23,7 @@ struct ContentView: View {
             ARViewContainer(
                 glassesModel: session.currentOutfit?.garment(for: .eyewear)?.modelName,
                 hatModel: session.currentOutfit?.garment(for: .headwear)?.modelName,
+                preloadModels: session.outfits.flatMap(\.garments).compactMap(\.modelName),
                 snapshotter: snapshotter
             )
             .ignoresSafeArea()

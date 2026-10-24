@@ -176,12 +176,12 @@
     }
   ],
   "outfits": [
-    { "id": "velour-hour", "name": "Velour Hour", "garmentIDs": ["pink-velour-hoodie", "low-rise-flare-jeans", "white-shades", "pink-leopard-bucket-hat"] },
-    { "id": "tattoo-parlour", "name": "Tattoo Parlour", "garmentIDs": ["ed-hardy-track-jacket", "pleated-mini-skirt", "y2k-sport-shades", "retrofit-trucker-cap"] },
+    { "id": "velour-hour", "name": "Velour Hour", "garmentIDs": ["pink-velour-hoodie", "low-rise-flare-jeans", "pink-leopard-bucket-hat"] },
+    { "id": "tattoo-parlour", "name": "Tattoo Parlour", "garmentIDs": ["ed-hardy-track-jacket", "pleated-mini-skirt", "retrofit-trucker-cap"] },
     { "id": "butterfly-baby", "name": "Butterfly Baby", "garmentIDs": ["butterfly-baby-tee", "low-rise-flare-jeans", "y2k-sport-shades"] },
     { "id": "leopard-night-out", "name": "Leopard Night Out", "garmentIDs": ["leopard-satin-halter", "pleated-mini-skirt", "white-shades"] },
-    { "id": "mesh-moment", "name": "Mesh Moment", "garmentIDs": ["mesh-long-sleeve-top", "low-rise-flare-jeans", "y2k-sport-shades", "scene-stripe-beanie"] },
-    { "id": "ringer-rewind", "name": "Ringer Rewind", "garmentIDs": ["ringer-baby-tee", "pleated-mini-skirt", "white-shades", "baby-blue-slouch-beanie"] },
+    { "id": "mesh-moment", "name": "Mesh Moment", "garmentIDs": ["mesh-long-sleeve-top", "low-rise-flare-jeans", "scene-stripe-beanie"] },
+    { "id": "ringer-rewind", "name": "Ringer Rewind", "garmentIDs": ["ringer-baby-tee", "pleated-mini-skirt", "baby-blue-slouch-beanie"] },
     { "id": "court-kings", "name": "Court Kings", "garmentIDs": ["basketball-jersey", "baggy-jeans", "y2k-sport-shades"] },
     { "id": "flame-on", "name": "Flame On", "garmentIDs": ["bowling-shirt", "camo-cargo-shorts", "white-shades"] },
     { "id": "chrome-club", "name": "Chrome Club", "garmentIDs": ["metallic-halter-top", "denim-mini-skirt", "white-shades"] },
