@@ -10,7 +10,7 @@ import SwiftUI
 struct AppShellView: View {
     let session: TryOnSession
 
-    @State private var selectedTab = AppTab.tryOn
+    @State private var selectedTab = AppTab.closet
     /// Set by Try On and the closet; the dialogs live here so they cover the tab bar too.
     @State private var tryOnPrompt: AITryOnLook?
     @State private var findIt: Garment?
