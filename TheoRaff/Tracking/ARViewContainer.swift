@@ -37,7 +37,7 @@ struct ARViewContainer: UIViewRepresentable {
 
     class Coordinator: NSObject, ARSessionDelegate {
         weak var arView: ARView?
-        private var glassesEntity: ModelEntity?
+        private var glassesEntity: Entity?
 
         func session(_ session: ARSession, didAdd anchors: [ARAnchor]) {
             guard let faceAnchor = anchors.first(where: {
