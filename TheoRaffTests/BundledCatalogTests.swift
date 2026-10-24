@@ -43,8 +43,56 @@ struct BundledCatalogTests {
         #expect(firstID == catalog.outfits.first?.id)
     }
 
-    @Test func testTeeHasAProductPhotoForAITryOn() throws {
-        let tee = try #require(catalog.garments.first { $0.id == "fal-test-tee" })
-        #expect(UIImage(named: tee.imageName) != nil)
+    @Test func hasTopsAndBottomsToRender() {
+        let categories = Set(catalog.garments.map(\.category))
+        #expect(categories.isSuperset(of: [.top, .bottom]))
     }
+
+    /// The closet shows this photo and the AI try-on sends it, so every garment needs one.
+    @Test func everyGarmentHasAProductPhoto() {
+        for garment in catalog.garments {
+            #expect(UIImage(named: garment.imageName) != nil, "No product photo for \(garment.id)")
+        }
+    }
+
+    /// tools/prep-garment.swift draws every cutout on the shared canvas.
+    @Test func productPhotosUseTheSharedCanvas() {
+        for garment in catalog.garments {
+            guard let image = UIImage(named: garment.imageName) else { continue }
+            let pixels = CGSize(width: image.size.width * image.scale, height: image.size.height * image.scale)
+            #expect(pixels == GarmentCanvas.size, "\(garment.id) is \(pixels), not on the shared canvas")
+        }
+    }
+
+    @Test func shipsNoTestGarments() {
+        #expect(catalog.garments.filter { $0.tags.contains("test") }.map(\.id) == [])
+    }
+
+    @Test func canvasShouldersAreLevelAndCentred() {
+        let middle = (GarmentCanvas.leftShoulder.x + GarmentCanvas.rightShoulder.x) / 2
+        #expect(GarmentCanvas.leftShoulder.y == GarmentCanvas.rightShoulder.y)
+        #expect(middle == GarmentCanvas.size.width / 2)
+    }
+
+    /// The script can't import the app, so it keeps its own copy of the canvas numbers.
+    /// Runs in the simulator, where the repo is readable; skipped on a phone.
+    @Test(.enabled(if: FileManager.default.fileExists(atPath: BundledCatalogTests.prepScriptPath)))
+    func prepScriptUsesTheSameCanvas() throws {
+        let script = try String(contentsOfFile: Self.prepScriptPath, encoding: .utf8)
+        let canvas = [
+            "static let width = \(Int(GarmentCanvas.size.width))",
+            "static let height = \(Int(GarmentCanvas.size.height))",
+            "static let leftShoulder = CGPoint(x: \(Int(GarmentCanvas.leftShoulder.x)), y: \(Int(GarmentCanvas.leftShoulder.y)))",
+            "static let rightShoulder = CGPoint(x: \(Int(GarmentCanvas.rightShoulder.x)), y: \(Int(GarmentCanvas.rightShoulder.y)))",
+        ]
+        for line in canvas {
+            #expect(script.contains(line), "tools/prep-garment.swift doesn't have \(line)")
+        }
+    }
+
+    static let prepScriptPath = URL(fileURLWithPath: #filePath)
+        .deletingLastPathComponent()
+        .deletingLastPathComponent()
+        .appendingPathComponent("tools/prep-garment.swift")
+        .path
 }
