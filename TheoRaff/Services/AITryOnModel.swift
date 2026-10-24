@@ -19,6 +19,7 @@ extension RenderService: TryOnRendering {
 final class AITryOnModel {
     enum Phase: Equatable {
         case camera
+        /// Seconds left before the photo. 0 while the photo is being taken.
         case countdown(Int)
         case rendering(RenderStatus?)
         case result(URL)
@@ -26,7 +27,6 @@ final class AITryOnModel {
     }
 
     let look: AITryOnLook
-    let countdownSeconds: Int
     private(set) var phase: Phase
     private(set) var capturedPhoto: UIImage?
     /// Which garment is being rendered, counting from 0.
@@ -41,13 +41,11 @@ final class AITryOnModel {
     init(
         look: AITryOnLook,
         productImages: [String: UIImage],
-        countdownSeconds: Int = 5,
         makeRenderer: @escaping () throws -> TryOnRendering,
         sleep: @escaping (Duration) async throws -> Void = { try await Task.sleep(for: $0) }
     ) {
         self.look = look
         self.productImages = productImages
-        self.countdownSeconds = countdownSeconds
         self.makeRenderer = makeRenderer
         self.sleep = sleep
         self.phase = .camera
@@ -58,14 +56,12 @@ final class AITryOnModel {
     convenience init(
         garment: Garment,
         productImage: UIImage?,
-        countdownSeconds: Int = 5,
         makeRenderer: @escaping () throws -> TryOnRendering,
         sleep: @escaping (Duration) async throws -> Void = { try await Task.sleep(for: $0) }
     ) {
         self.init(
             look: AITryOnLook(garment: garment),
             productImages: productImage.map { [garment.id: $0] } ?? [:],
-            countdownSeconds: countdownSeconds,
             makeRenderer: makeRenderer,
             sleep: sleep
         )
@@ -73,14 +69,15 @@ final class AITryOnModel {
 
     var canStartCountdown: Bool { phase == .camera }
 
-    /// The shutter: counts down, takes the photo with `capture`, then renders the look onto it.
+    /// The shutter: counts down `seconds` (the Profile tab's photo countdown, kept to 0...10),
+    /// takes the photo with `capture`, then renders the look onto it.
     func startCountdown(
         seconds: Int,
         capture: @escaping @MainActor () async throws -> UIImage
     ) {
         guard canStartCountdown, let pieces = renderPieces else { return }
 
-        let seconds = max(0, seconds)
+        let seconds = PhotoCountdown.clamped(seconds)
         phase = .countdown(seconds)
         task = Task { [weak self] in
             await self?.run(

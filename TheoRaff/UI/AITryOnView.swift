@@ -3,7 +3,7 @@ import SwiftUI
 /// Full-screen AI try-on: live camera, a countdown, then the AI render of you wearing the look,
 /// one garment at a time.
 struct AITryOnView: View {
-    @AppStorage("photoCountdownSeconds") private var photoCountdownSeconds = 3
+    @AppStorage(PhotoCountdown.storageKey) private var photoCountdownSeconds = PhotoCountdown.defaultSeconds
     @Environment(\.dismiss) private var dismiss
     @State private var model: AITryOnModel
     @State private var camera = CameraController()
@@ -113,14 +113,16 @@ struct AITryOnView: View {
                     model.startCountdown(seconds: photoCountdownSeconds) {
                         try await camera.capturePhoto()
                     }
-                }                .accessibilityLabel("Start \(model.countdownSeconds) second timer")
-                Text("Tap to start a \(model.countdownSeconds)-second timer")
+                }
+                .accessibilityLabel(PhotoCountdown.shutterAccessibilityLabel(for: photoCountdownSeconds))
+                Text(PhotoCountdown.shutterHint(for: photoCountdownSeconds))
                     .font(Win95.font(13, relativeTo: .footnote))
                     .foregroundStyle(.white)
                     .shadow(color: .black, radius: 0, x: 1, y: 1)
             }
         case .countdown(let seconds):
-            Text("\(seconds)")
+            // 0 means the photo is being taken, so there's no number to show.
+            Text(seconds > 0 ? "\(seconds)" : " ")
                 .font(Win95.font(120, bold: true, relativeTo: .largeTitle))
                 .foregroundStyle(.white)
                 .shadow(color: .black, radius: 0, x: 4, y: 4)
