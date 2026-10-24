@@ -41,6 +41,67 @@ struct AppShellView: View {
                 }
                 .tag(AppTab.profile)
         }
+        .toolbar(.hidden, for: .tabBar)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            customTabBar
+        }
+    }
+
+    private var customTabBar: some View {
+        HStack(spacing: 4) {
+            tabButton(.tryOn, title: "Try On", symbol: "camera")
+            tabButton(.closet, title: "Closet", symbol: "hanger")
+            tabButton(.profile, title: "Profile", symbol: "person")
+        }
+        .padding(.horizontal, 10)
+        .padding(.top, 8)
+        .padding(.bottom, 8)
+        .background(
+            Color(red: 0.64, green: 0.59, blue: 0.53)
+                .ignoresSafeArea(edges: .bottom)
+        )
+    }
+
+    private func tabButton(
+        _ tab: AppTab,
+        title: String,
+        symbol: String
+    ) -> some View {
+        let isSelected = selectedTab == tab
+
+        return Button {
+            selectedTab = tab
+        } label: {
+            VStack(spacing: 4) {
+                Image(systemName: symbol)
+                    .font(.system(size: 19, weight: .medium))
+
+                Text(title)
+                    .font(.caption2.weight(.semibold))
+            }
+            .foregroundStyle(
+                isSelected
+                    ? Color(red: 0.18, green: 0.30, blue: 0.53)
+                    : Color.primary
+            )
+            .frame(maxWidth: .infinity)
+            .frame(height: 54)
+            .background {
+                if isSelected {
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(Color(red: 0.91, green: 0.89, blue: 0.85))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 3)
+                                .stroke(
+                                    Color(red: 0.40, green: 0.33, blue: 0.27),
+                                    lineWidth: 1
+                                )
+                        )
+                }
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 }
 
