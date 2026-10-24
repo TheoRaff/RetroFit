@@ -131,5 +131,5 @@ struct ContentView: View {
 }
 
 #Preview {
-    ContentView(session: TryOnSession(outfits: SampleCatalog.outfits()))
+    ContentView(session: TryOnSession(outfits: Catalog.bundled.outfits))
 }

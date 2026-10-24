@@ -1,0 +1,44 @@
+{
+  "garments": [
+    {
+      "id": "y2k-sport-shades",
+      "name": "Y2K Sport Shades",
+      "category": "eyewear",
+      "imageName": "y2k-sport-shades",
+      "modelName": "Y2K_Sport_Sunglass",
+      "searchQuery": "y2k sport wrap sunglasses",
+      "tags": ["sporty", "mcbling"]
+    },
+    {
+      "id": "white-shades",
+      "name": "White Shades",
+      "category": "eyewear",
+      "imageName": "white-shades",
+      "modelName": "White_sunglasses",
+      "searchQuery": "y2k white sunglasses",
+      "tags": ["mcbling"]
+    },
+    {
+      "id": "fal-test-tee",
+      "name": "Test Tee (fal sample)",
+      "category": "top",
+      "imageName": "fal-test-tee",
+      "searchQuery": "black graphic tee",
+      "tags": ["test"]
+    },
+    {
+      "id": "pink-velour-hoodie",
+      "name": "Pink Velour Hoodie",
+      "category": "top",
+      "imageName": "pink-velour-hoodie",
+      "searchQuery": "y2k pink velour zip hoodie",
+      "tags": ["mcbling"]
+    }
+  ],
+  "outfits": [
+    { "id": "sport-shades-look", "name": "Sport Shades", "garmentIDs": ["y2k-sport-shades"] },
+    { "id": "white-shades-look", "name": "White Shades", "garmentIDs": ["white-shades"] },
+    { "id": "fal-test-tee-look", "name": "Test Tee", "garmentIDs": ["fal-test-tee"] },
+    { "id": "velour-hoodie-look", "name": "Pink Velour Hoodie", "garmentIDs": ["pink-velour-hoodie"] }
+  ]
+}

@@ -14,11 +14,7 @@ struct AppShellView: View {
     @State private var selectedTab = AppTab.tryOn
 
     private var catalogGarments: [Garment] {
-        var seenIDs = Set<String>()
-
-        return SampleCatalog.outfits()
-            .flatMap(\.garments)
-            .filter { seenIDs.insert($0.id).inserted }
+        Catalog.bundled.garments
     }
 
     var body: some View {
@@ -175,6 +171,11 @@ private struct GarmentCard: View {
                 }
 
                 Spacer(minLength: 0)
+
+                FindItMenu(garment: garment) {
+                    Image(systemName: "bag")
+                }
+                .tint(.primary)
 
                 Button {
                     if session.isLiked(garment) {
