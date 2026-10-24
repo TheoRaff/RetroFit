@@ -8,9 +8,24 @@ private struct FakeRenderer: TryOnRendering {
     var result: Result<URL, RenderError> = .success(URL(string: "https://cdn.example.com/look.png")!)
     var statuses: [RenderStatus] = []
 
-    func render(person: UIImage, clothing: UIImage, onStatus: @escaping @Sendable (RenderStatus) -> Void) async throws -> URL {
+    func render(person: RenderPerson, clothing: UIImage, onStatus: @escaping @Sendable (RenderStatus) -> Void) async throws -> URL {
         statuses.forEach(onStatus)
         return try result.get()
+    }
+}
+
+/// Returns step-1.png, step-2.png… and records what each render was given.
+private final class ChainRenderer: TryOnRendering, @unchecked Sendable {
+    private let lock = NSLock()
+    private(set) var people: [RenderPerson] = []
+    private(set) var clothes: [UIImage] = []
+
+    func render(person: RenderPerson, clothing: UIImage, onStatus: @escaping @Sendable (RenderStatus) -> Void) async throws -> URL {
+        lock.lock()
+        defer { lock.unlock() }
+        people.append(person)
+        clothes.append(clothing)
+        return URL(string: "https://cdn.example.com/step-\(people.count).png")!
     }
 }
 
@@ -140,5 +155,64 @@ struct AITryOnModelTests {
     ])
     func describesProgress(status: RenderStatus?, text: String) {
         #expect(AITryOnModel.progressText(for: status) == text)
+    }
+
+    // MARK: Whole outfits
+
+    @Test func rendersEachPieceOntoTheLastResult() async throws {
+        let jersey = try Fixtures.garment(id: "jersey", category: .top)
+        let jeans = try Fixtures.garment(id: "jeans", category: .bottom)
+        let jerseyPhoto = UIImage(systemName: "tshirt")!
+        let jeansPhoto = UIImage(systemName: "figure.walk")!
+        let renderer = ChainRenderer()
+        let model = AITryOnModel(
+            look: AITryOnLook(title: "Court Kings", garments: [jeans, jersey]),
+            productImages: [jersey.id: jerseyPhoto, jeans.id: jeansPhoto],
+            countdownSeconds: 1,
+            makeRenderer: { renderer },
+            sleep: { _ in }
+        )
+        model.startCountdown { self.selfie }
+        await model.waitUntilFinished()
+
+        #expect(model.phase == .result(URL(string: "https://cdn.example.com/step-2.png")!))
+        #expect(renderer.clothes.count == 2)
+        #expect(renderer.clothes.first === jerseyPhoto)
+        #expect(renderer.clothes.last === jeansPhoto)
+        guard case .photo(let first)? = renderer.people.first, case .url(let second)? = renderer.people.last else {
+            Issue.record("Expected the photo, then the first result, got \(renderer.people)")
+            return
+        }
+        #expect(first === selfie)
+        #expect(second == URL(string: "https://cdn.example.com/step-1.png")!)
+    }
+
+    @Test func saysWhichPieceIsRendering() throws {
+        let jersey = try Fixtures.garment(id: "jersey", category: .top)
+        let jeans = try Fixtures.garment(id: "jeans", category: .bottom)
+        let model = AITryOnModel(
+            look: AITryOnLook(title: "Court Kings", garments: [jersey, jeans]),
+            productImages: [jersey.id: product, jeans.id: product],
+            makeRenderer: { FakeRenderer() }
+        )
+        model.beginRenderingForTesting()
+        #expect(model.progressText == "Garment jersey (1 of 2)\nBuffering…")
+        #expect(makeModel(productImage: product).progressText == "Buffering…")
+    }
+
+    @Test func explainsAMissingPhotoForAnyPieceStraightAway() throws {
+        let jersey = try Fixtures.garment(id: "jersey", category: .top)
+        let jeans = try Fixtures.garment(id: "jeans", category: .bottom)
+        let model = AITryOnModel(
+            look: AITryOnLook(title: "Court Kings", garments: [jersey, jeans]),
+            productImages: [jersey.id: product],
+            makeRenderer: { FakeRenderer() }
+        )
+        guard case .failed(let message) = model.phase else {
+            Issue.record("Expected a failure, got \(model.phase)")
+            return
+        }
+        #expect(message.contains("Garment jeans"))
+        #expect(model.canStartCountdown == false)
     }
 }

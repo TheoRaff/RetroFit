@@ -1,12 +1,13 @@
 import SwiftUI
 
 /// The closet tab: every garment in the catalog, with search, a category filter and a
-/// "Saved" toggle. Tapping a garment offers the AI try-on; the bag button offers Find it.
-/// Both dialogs are shown by `AppShellView`, so they cover the tab bar too.
+/// "Saved" toggle. Tapping a garment offers the AI try-on, or adding it to an outfit to try on
+/// with other pieces; the bag button offers Find it. The dialogs are shown by `AppShellView`,
+/// so they cover the tab bar too.
 struct ClosetView: View {
     let garments: [Garment]
     let session: TryOnSession
-    @Binding var tryOnPrompt: Garment?
+    @Binding var tryOnPrompt: AITryOnLook?
     @Binding var findIt: Garment?
 
     @State private var searchText = ""
@@ -53,6 +54,9 @@ struct ClosetView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .padding(2)
                     .win95Sunken()
+                if !session.fittingRoom.isEmpty {
+                    fittingRoomBar
+                }
             }
             .padding(8)
         }
@@ -81,13 +85,56 @@ struct ClosetView: View {
                     ForEach(filteredGarments) { garment in
                         GarmentCard(garment: garment, session: session) { findIt = garment }
                             .contentShape(Rectangle())
-                            .onTapGesture { tryOnPrompt = garment }
-                            .accessibilityAction(named: "Try on with AI") { tryOnPrompt = garment }
+                            .onTapGesture { tryOnPrompt = AITryOnLook(garment: garment) }
+                            .accessibilityAction(named: "Try on with AI") { tryOnPrompt = AITryOnLook(garment: garment) }
                     }
                 }
                 .padding(8)
             }
         }
+    }
+}
+
+extension ClosetView {
+    /// The pieces picked to try on together, with buttons to try them on or clear them.
+    private var fittingRoomBar: some View {
+        HStack(spacing: 8) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Your outfit")
+                    .font(Win95.font(12, bold: true))
+                Text(session.fittingRoom.map(\.name).joined(separator: " + "))
+                    .font(Win95.font(12))
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.8)
+            }
+            .foregroundStyle(Win95.text)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .accessibilityElement(children: .combine)
+
+            Button {
+                tryOnPrompt = AITryOnLook(title: "Your outfit", garments: session.fittingRoom)
+            } label: {
+                Label("AI try on", systemImage: "wand.and.stars")
+                    .labelStyle(Win95ButtonLabelStyle())
+                    .font(Win95.font(13, bold: true))
+                    .padding(.horizontal, 10)
+                    .frame(minHeight: 36)
+            }
+            .buttonStyle(Win95ButtonStyle())
+
+            Button {
+                withAnimation(.snappy) { session.clearFittingRoom() }
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 13, weight: .bold))
+                    .frame(width: 36, height: 36)
+            }
+            .buttonStyle(Win95ButtonStyle())
+            .accessibilityLabel("Clear the outfit")
+        }
+        .padding(8)
+        .win95Raised()
+        .transition(.move(edge: .bottom).combined(with: .opacity))
     }
 }
 
@@ -122,6 +169,17 @@ private struct GarmentCard: View {
                 .aspectRatio(1, contentMode: .fit)
                 .overlay { photo }
                 .overlay(alignment: .topTrailing) { cornerButtons }
+                .overlay(alignment: .topLeading) {
+                    if session.isInFittingRoom(garment) {
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 12, weight: .heavy))
+                            .foregroundStyle(.white)
+                            .frame(width: 24, height: 24)
+                            .background(Win95.navy)
+                            .padding(4)
+                            .accessibilityLabel("In your outfit")
+                    }
+                }
                 .win95Sunken()
 
             VStack(alignment: .leading, spacing: 2) {

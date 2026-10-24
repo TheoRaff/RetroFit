@@ -2,9 +2,11 @@ import SwiftUI
 
 /// The try-on screen: the live camera with the current outfit on your face.
 /// Swipe left or tap Skip for the next outfit, swipe right to go back, tap Like to save it,
-/// and tap the shutter to save a photo to your camera roll.
+/// tap the shutter to save a photo to your camera roll, and tap AI to try the whole look on with AI.
 struct ContentView: View {
     let session: TryOnSession
+    /// Shown by `AppShellView`, so the dialog covers the tab bar too.
+    @Binding var tryOnPrompt: AITryOnLook?
 
     @State private var snapshotter = ARSnapshotter()
     @State private var isCapturing = false
@@ -36,6 +38,8 @@ struct ContentView: View {
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
                 ShutterButton(isBusy: isCapturing, action: capturePhoto)
+                    .frame(maxWidth: .infinity)
+                    .overlay(alignment: .trailing) { aiButton }
                     .padding(.bottom, 8)
                 outfitControls
             }
@@ -74,6 +78,26 @@ struct ContentView: View {
             }
         } else {
             Win95Tooltip(text: "No outfits to try on yet")
+        }
+    }
+
+    /// Tries the whole current look on with AI, every piece of clothing in it.
+    @ViewBuilder
+    private var aiButton: some View {
+        if let outfit = session.currentOutfit {
+            Button {
+                tryOnPrompt = AITryOnLook(outfit: outfit)
+            } label: {
+                VStack(spacing: 2) {
+                    Image(systemName: "wand.and.stars")
+                        .font(.system(size: 18, weight: .semibold))
+                    Text("AI")
+                        .font(Win95.font(12, bold: true))
+                }
+                .frame(width: 58, height: 52)
+            }
+            .buttonStyle(Win95ButtonStyle())
+            .accessibilityLabel("Try this look on with AI")
         }
     }
 
@@ -166,5 +190,5 @@ struct ContentView: View {
 }
 
 #Preview {
-    ContentView(session: TryOnSession(outfits: Catalog.bundled.outfits))
+    ContentView(session: TryOnSession(outfits: Catalog.bundled.outfits), tryOnPrompt: .constant(nil))
 }

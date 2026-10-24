@@ -11,13 +11,13 @@ struct AppShellView: View {
     let session: TryOnSession
 
     @State private var selectedTab = AppTab.tryOn
-    /// Set by the closet; the dialogs live here so they cover the tab bar too.
-    @State private var tryOnPrompt: Garment?
+    /// Set by Try On and the closet; the dialogs live here so they cover the tab bar too.
+    @State private var tryOnPrompt: AITryOnLook?
     @State private var findIt: Garment?
 
     var body: some View {
         TabView(selection: $selectedTab) {
-            ContentView(session: session)
+            ContentView(session: session, tryOnPrompt: $tryOnPrompt)
                 .tag(AppTab.tryOn)
 
             ClosetView(garments: Catalog.bundled.garments, session: session, tryOnPrompt: $tryOnPrompt, findIt: $findIt)
@@ -30,7 +30,7 @@ struct AppShellView: View {
         .safeAreaInset(edge: .bottom, spacing: 0) {
             tabBar
         }
-        .aiTryOnPrompt(for: $tryOnPrompt)
+        .aiTryOnPrompt(for: $tryOnPrompt, session: session)
         .findItPrompt(for: $findIt)
         .task { await ProductPhoto.preload(photoNames) }
         // The Windows look is a fixed light theme. Dark only on Try On, so the status bar
