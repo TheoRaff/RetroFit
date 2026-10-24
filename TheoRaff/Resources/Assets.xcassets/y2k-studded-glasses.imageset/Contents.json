@@ -1,0 +1,12 @@
+{
+  "images" : [
+    {
+      "filename" : "y2k-studded-glasses.png",
+      "idiom" : "universal"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}
