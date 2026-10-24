@@ -3,13 +3,21 @@ import SwiftUI
 /// The try-on screen: the live camera with the current glasses or hat on your face. The deck
 /// only holds items the camera can show live; clothes are tried on with AI from the closet.
 /// Swipe left or tap Skip for the next item, swipe right to go back, tap Like to save it,
-/// tap the shutter to save a photo to your camera roll, and tap AI to try it on with AI.
+/// tap the shutter to save a photo, turn on the ring light, or flip to rear-camera photography.
 struct ContentView: View {
     let session: TryOnSession
     /// Shown by `AppShellView`, so the dialog covers the tab bar too.
     @Binding var tryOnPrompt: AITryOnLook?
 
-    @State private var snapshotter = ARSnapshotter()
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var snapshotter: ARSnapshotter
+    @State private var rearCamera: CameraController
+    @State private var camera: TryOnCameraController
+    @State private var isVisible = false
+    @State private var captureTask: Task<Void, Never>?
+    @State private var flipTask: Task<Void, Never>?
+    @State private var lightTask: Task<Void, Never>?
+    @State private var toastTask: Task<Void, Never>?
     @State private var isCapturing = false
     @State private var showFlash = false
     @State private var toast: String?
@@ -21,15 +29,31 @@ struct ContentView: View {
     private let swipeDistance: CGFloat = 60
     private let photoSaver = TryOnPhotoSaver(library: SystemPhotoLibrary())
 
+    init(session: TryOnSession, tryOnPrompt: Binding<AITryOnLook?>) {
+        self.session = session
+        _tryOnPrompt = tryOnPrompt
+        let snapshotter = ARSnapshotter()
+        let rearCamera = CameraController()
+        _snapshotter = State(initialValue: snapshotter)
+        _rearCamera = State(initialValue: rearCamera)
+        _camera = State(initialValue: TryOnCameraController(source:
+            SystemTryOnCameraSource(snapshotter: snapshotter, rearCamera: rearCamera)))
+    }
+
     var body: some View {
         ZStack(alignment: .bottom) {
-            ARViewContainer(
-                glassesModel: session.currentOutfit?.garment(for: .eyewear)?.modelName,
-                hatModel: session.currentOutfit?.garment(for: .headwear)?.modelName,
-                preloadModels: session.outfits.flatMap(\.garments).compactMap(\.modelName),
-                snapshotter: snapshotter
-            )
-            .ignoresSafeArea()
+            if camera.mode == .front {
+                ARViewContainer(
+                    glassesModel: session.currentOutfit?.garment(for: .eyewear)?.modelName,
+                    hatModel: session.currentOutfit?.garment(for: .headwear)?.modelName,
+                    preloadModels: session.outfits.flatMap(\.garments).compactMap(\.modelName),
+                    snapshotter: snapshotter,
+                    isActive: camera.showsFrontAR
+                )
+                .ignoresSafeArea()
+            } else {
+                CameraPreview(session: rearCamera.session).ignoresSafeArea()
+            }
 
             // The AR view takes touches for itself, so swipes land on this layer above it.
             Color.clear
@@ -37,16 +61,22 @@ struct ContentView: View {
                 .gesture(swipeGesture)
                 .ignoresSafeArea()
 
+            if camera.isLightOn && camera.mode == .front && camera.isActive {
+                ScreenRingLight()
+            }
+
             VStack(spacing: 12) {
                 if let toast {
                     Win95Tooltip(text: toast)
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
-                ShutterButton(isBusy: isCapturing, action: capturePhoto)
-                    .frame(maxWidth: .infinity)
-                    .overlay(alignment: .trailing) { }
+                cameraControls
                     .padding(.bottom, 8)
-                outfitControls
+                if camera.mode == .front {
+                    outfitControls
+                } else {
+                    Win95Tooltip(text: "Rear camera · live glasses and hats use the front camera")
+                }
             }
             .padding(.horizontal, 16)
             .padding(.bottom, 13)
@@ -62,6 +92,62 @@ struct ContentView: View {
             newCount > oldCount ? .success : nil
         }
         .sensoryFeedback(.success, trigger: savedPhotos)
+        .onAppear {
+            isVisible = true
+            if scenePhase == .active { camera.activate() }
+        }
+        .onDisappear {
+            isVisible = false
+            stopCamera()
+        }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .background {
+                stopCamera()
+            } else if phase == .active && isVisible {
+                camera.activate()
+            }
+        }
+        .onChange(of: camera.error) { _, error in
+            if let error { showToast(error) }
+        }
+    }
+
+    private var cameraControls: some View {
+        ShutterButton(isBusy: isCapturing || camera.isBusy, action: capturePhoto)
+            .disabled(!camera.isActive || camera.isBusy || isCapturing)
+            .frame(maxWidth: .infinity)
+            .overlay(alignment: .leading) {
+                Button {
+                    lightTask = Task { await camera.toggleLight() }
+                } label: {
+                    Image(systemName: camera.isLightOn ? "lightbulb.fill" : "lightbulb")
+                        .font(.system(size: 20)).frame(width: 48, height: 48)
+                }
+                .buttonStyle(Win95ButtonStyle(isOn: camera.isLightOn))
+                .disabled(!camera.isActive || camera.isBusy || isCapturing)
+                .accessibilityLabel(camera.isLightOn ? "Turn light off" : "Turn light on")
+            }
+            .overlay(alignment: .trailing) {
+                Button {
+                    flipTask = Task { await camera.flip() }
+                } label: {
+                    Image(systemName: "arrow.triangle.2.circlepath.camera")
+                        .font(.system(size: 20)).frame(width: 48, height: 48)
+                }
+                .buttonStyle(Win95ButtonStyle())
+                .disabled(!camera.isActive || camera.isBusy || isCapturing)
+                .accessibilityLabel(camera.mode == .front ? "Switch to rear camera" : "Switch to front camera")
+            }
+    }
+
+    private func stopCamera() {
+        captureTask?.cancel()
+        flipTask?.cancel()
+        lightTask?.cancel()
+        toastTask?.cancel()
+        showFlash = false
+        toast = nil
+        camera.deactivate()
     }
 
     @ViewBuilder
@@ -85,9 +171,6 @@ struct ContentView: View {
             Win95Tooltip(text: "No outfits to try on yet")
         }
     }
-
-    /// Tries the whole current look on with AI, every piece of clothing in it.
-
 
     /// Skip and Like, the two big buttons under the card. On the last look, Skip becomes
     /// Start over, so the deck never looks stuck.
@@ -143,36 +226,28 @@ struct ContentView: View {
     // MARK: Photos
 
     private func capturePhoto() {
-        guard !isCapturing else { return }
+        guard !isCapturing, camera.isActive, !camera.isBusy else { return }
         isCapturing = true
-
-        Task {
-            defer { isCapturing = false }
-
-            if photoCountdownSeconds > 0 {
-                for secondsRemaining in stride(
-                    from: photoCountdownSeconds,
-                    through: 1,
-                    by: -1
-                ) {
-                    showToast("Photo in \(secondsRemaining)…")
-                    try? await Task.sleep(for: .seconds(1))
+        captureTask = Task {
+            defer { isCapturing = false; captureTask = nil }
+            do {
+                for remaining in stride(from: max(0, min(photoCountdownSeconds, 10)), through: 1, by: -1) {
+                    showToast("Photo in \(remaining)…")
+                    try await Task.sleep(for: .seconds(1))
                 }
-            }
-
-            guard let image = await snapshotter.capture() else {
-                showToast("Couldn't take the photo. Try again.")
+                try Task.checkCancellation()
+                let image = try await camera.capture()
+                try Task.checkCancellation()
+                await flash()
+                try Task.checkCancellation()
+                let result = await photoSaver.save(image)
+                if result == .saved { savedPhotos += 1 }
+                if !Task.isCancelled { showToast(result.message) }
+            } catch is CancellationError {
                 return
+            } catch {
+                if !Task.isCancelled { showToast(error.localizedDescription) }
             }
-
-            await flash()
-            let result = await photoSaver.save(image)
-
-            if result == .saved {
-                savedPhotos += 1
-            }
-
-            showToast(result.message)
         }
     }
 
@@ -184,8 +259,9 @@ struct ContentView: View {
 
     private func showToast(_ message: String) {
         withAnimation(.snappy) { toast = message }
-        Task {
-            try? await Task.sleep(for: .seconds(2.5))
+        toastTask?.cancel()
+        toastTask = Task {
+            do { try await Task.sleep(for: .seconds(2.5)) } catch { return }
             if toast == message {
                 withAnimation(.snappy) { toast = nil }
             }

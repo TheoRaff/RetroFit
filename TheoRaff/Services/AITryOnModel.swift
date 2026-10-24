@@ -12,7 +12,7 @@ extension RenderService: TryOnRendering {
     }
 }
 
-/// The AI try-on flow for a look: a camera or library photo, then one AI render per garment,
+/// The AI try-on flow for a look: camera, countdown, photo, then one AI render per garment,
 /// each drawn onto the result of the one before, then the result.
 @MainActor
 @Observable
@@ -82,16 +82,6 @@ final class AITryOnModel {
         }
     }
 
-    /// A library photo is ready to render immediately, without taking a new camera photo.
-    func start(photo: UIImage) {
-        guard canStartCountdown, let pieces = renderPieces else { return }
-        capturedPhoto = photo
-        phase = .rendering(nil)
-        task = Task { [weak self] in
-            await self?.run(pieces: pieces, skipCountdown: true, capture: { photo })
-        }
-    }
-
     func retake() {
         task?.cancel()
         task = nil
@@ -145,12 +135,7 @@ final class AITryOnModel {
         return .camera
     }
 
-    private func run(
-        pieces: [(Garment, UIImage)],
-        skipCountdown: Bool = false,
-        capture: @MainActor () async throws -> UIImage
-    ) async {
-        guard !Task.isCancelled else { return }
+    private func run(pieces: [(Garment, UIImage)], capture: @MainActor () async throws -> UIImage) async {
         let renderer: TryOnRendering
         do {
             renderer = try makeRenderer()
@@ -159,18 +144,11 @@ final class AITryOnModel {
             return
         }
         do {
-            if !skipCountdown {
-                try await countDown()
-            }
-            try Task.checkCancellation()
+            try await countDown()
             let photo: UIImage
             do {
                 photo = try await capture()
-                try Task.checkCancellation()
-            } catch is CancellationError {
-                return
             } catch {
-                guard !Task.isCancelled else { return }
                 phase = .failed("Couldn't take the photo. Try again.")
                 return
             }
@@ -193,7 +171,6 @@ final class AITryOnModel {
         } catch is CancellationError {
             return
         } catch {
-            guard !Task.isCancelled else { return }
             phase = .failed(Self.message(for: error))
         }
     }

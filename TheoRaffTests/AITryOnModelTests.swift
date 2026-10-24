@@ -88,87 +88,6 @@ struct AITryOnModelTests {
         #expect(model.capturedPhoto === selfie)
     }
 
-    @Test func rendersALibraryPhotoWithoutCountingDown() async {
-        let recorder = PhaseRecorder()
-        let renderer = ChainRenderer()
-        let model = makeModel(productImage: product, renderer: { renderer }, recorder: recorder)
-        model.start(photo: selfie)
-        #expect(model.phase == .rendering(nil))
-        #expect(model.canStartCountdown == false)
-        await model.waitUntilFinished()
-
-        #expect(recorder.phases.isEmpty)
-        #expect(model.capturedPhoto === selfie)
-        #expect(model.phase == .result(URL(string: "https://cdn.example.com/step-1.png")!))
-        guard case .photo(let person)? = renderer.people.first else {
-            Issue.record("Expected the selected photo to be sent to the renderer")
-            return
-        }
-        #expect(person === selfie)
-        #expect(renderer.clothes.first === product)
-    }
-
-    @Test func ignoresAnotherPhotoOrShutterWhileRendering() async {
-        let renderer = ChainRenderer()
-        let model = makeModel(productImage: product, renderer: { renderer })
-        model.start(photo: selfie)
-        model.start(photo: product)
-        var captures = 0
-        model.startCountdown { captures += 1; return self.selfie }
-        await model.waitUntilFinished()
-
-        #expect(captures == 0)
-        #expect(renderer.people.count == 1)
-        #expect(model.capturedPhoto === selfie)
-    }
-
-    @Test func cannotRenderALibraryPhotoWithoutTheProductPhoto() async {
-        let renderer = ChainRenderer()
-        let model = makeModel(productImage: nil, renderer: { renderer })
-        model.start(photo: selfie)
-        await model.waitUntilFinished()
-
-        guard case .failed = model.phase else {
-            Issue.record("Expected the missing-product-photo failure")
-            return
-        }
-        #expect(renderer.people.isEmpty)
-        #expect(model.capturedPhoto == nil)
-    }
-
-    @Test func libraryPhotoUsesTheRenderErrorScreen() async {
-        let model = makeModel(productImage: product, renderer: { FakeRenderer(result: .failure(.timedOut)) })
-        model.start(photo: selfie)
-        await model.waitUntilFinished()
-        #expect(model.phase == .failed("The render is taking too long. Try again."))
-        model.retake()
-        #expect(model.phase == .camera)
-        #expect(model.capturedPhoto == nil)
-    }
-
-    @Test func canRenderTheSameLibraryPhotoAfterRetaking() async {
-        let renderer = ChainRenderer()
-        let model = makeModel(productImage: product, renderer: { renderer })
-        model.start(photo: selfie)
-        await model.waitUntilFinished()
-        model.retake()
-        model.start(photo: selfie)
-        await model.waitUntilFinished()
-
-        #expect(renderer.people.count == 2)
-        #expect(model.capturedPhoto === selfie)
-        #expect(model.phase == .result(URL(string: "https://cdn.example.com/step-2.png")!))
-    }
-
-    @Test func cancellingBeforeALibraryRenderStartsMakesNoRequest() async {
-        let renderer = ChainRenderer()
-        let model = makeModel(productImage: product, renderer: { renderer })
-        model.start(photo: selfie)
-        model.cancel()
-        await model.waitUntilFinished()
-        #expect(renderer.people.isEmpty)
-    }
-
     @Test func ignoresTheShutterOnceStarted() async {
         let model = makeModel(productImage: product)
         var captures = 0
@@ -240,8 +159,7 @@ struct AITryOnModelTests {
 
     // MARK: Whole outfits
 
-    @Test(arguments: [false, true])
-    func rendersEachPieceOntoTheLastResult(fromLibrary: Bool) async throws {
+    @Test func rendersEachPieceOntoTheLastResult() async throws {
         let jersey = try Fixtures.garment(id: "jersey", category: .top)
         let jeans = try Fixtures.garment(id: "jeans", category: .bottom)
         let jerseyPhoto = UIImage(systemName: "tshirt")!
@@ -254,11 +172,7 @@ struct AITryOnModelTests {
             makeRenderer: { renderer },
             sleep: { _ in }
         )
-        if fromLibrary {
-            model.start(photo: selfie)
-        } else {
-            model.startCountdown { self.selfie }
-        }
+        model.startCountdown { self.selfie }
         await model.waitUntilFinished()
 
         #expect(model.phase == .result(URL(string: "https://cdn.example.com/step-2.png")!))

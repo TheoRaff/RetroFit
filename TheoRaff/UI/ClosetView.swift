@@ -1,4 +1,5 @@
 import SwiftUI
+import PhotosUI
 
 /// The closet tab: every garment in the catalog, with search, a category filter and a
 /// "Saved" toggle. Tapping a garment offers the AI try-on, or adding it to an outfit to try on
@@ -14,13 +15,20 @@ struct ClosetView: View {
     @State private var selectedCategory = ClosetCategory.all
     @State private var showsSavedOnly = false
 
+    @State private var selectedClothingPhoto: PhotosPickerItem?
+    @State private var isLoadingClothing = false
+    @State private var importDraft: ClothingImportDraft?
+    @State private var importError: String?
+
+    private var allGarments: [Garment] { ImportedGarmentStore.shared.garments + garments }
+
     private let columns = [
         GridItem(.flexible(), spacing: 10, alignment: .top),
         GridItem(.flexible(), spacing: 10, alignment: .top),
     ]
 
     private var filteredGarments: [Garment] {
-        garments.filter { garment in
+        allGarments.filter { garment in
             let matchesSaved = !showsSavedOnly || session.isLiked(garment)
             let searchableText = ([garment.name, garment.searchQuery] + garment.tags).joined(separator: " ")
             let matchesSearch = searchText.isEmpty || searchableText.localizedCaseInsensitiveContains(searchText)
@@ -48,8 +56,19 @@ struct ClosetView: View {
             }
 
             VStack(spacing: 8) {
+                PhotosPicker(selection: $selectedClothingPhoto, matching: .images) {
+                    Label(isLoadingClothing ? "Loading clothing…" : "Add clothes from Photos", systemImage: "plus")
+                        .font(Win95.font(14, bold: true))
+                        .frame(maxWidth: .infinity, minHeight: 40)
+                }
+                .buttonStyle(Win95ButtonStyle())
+                .disabled(isLoadingClothing || ImportedGarmentStore.shared.loadError != nil)
+                .accessibilityLabel("Choose from Photos to add clothing")
+                if let message = importError ?? ImportedGarmentStore.shared.loadError {
+                    Text(message).font(Win95.font(12)).foregroundStyle(.red)
+                }
                 Win95SearchField(prompt: "Search closet", text: $searchText)
-                Win95SegmentedPicker(options: ClosetCategory.available(for: garments), selection: $selectedCategory) { $0.rawValue }
+                Win95SegmentedPicker(options: ClosetCategory.available(for: allGarments), selection: $selectedCategory) { $0.rawValue }
                 garmentList
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .padding(2)
@@ -61,12 +80,47 @@ struct ClosetView: View {
             .padding(8)
         }
         .background(Win95.face.ignoresSafeArea())
+        .task(id: selectedClothingPhoto) { await loadClothingPhoto() }
+        .sheet(item: $importDraft) { draft in
+            AddClothingView(draft: draft) { garment in
+                searchText = ""
+                selectedCategory = .all
+                showsSavedOnly = false
+                session.like(garment)
+            }
+        }
+    }
+
+    private func loadClothingPhoto() async {
+        guard let item = selectedClothingPhoto else { return }
+        isLoadingClothing = true
+        importError = nil
+        defer {
+            isLoadingClothing = false
+            selectedClothingPhoto = nil
+        }
+        do {
+            guard let data = try await item.loadTransferable(type: Data.self) else {
+                throw ImportedGarmentStore.ImportError.invalidPhoto
+            }
+            try Task.checkCancellation()
+            let photo = try await Task.detached(priority: .userInitiated) {
+                try ImportedGarmentStore.preparePhoto(data: data)
+            }.value
+            try Task.checkCancellation()
+            importDraft = ClothingImportDraft(photo: photo)
+        } catch is CancellationError {
+            return
+        } catch {
+            guard !Task.isCancelled else { return }
+            importError = "Couldn't load that clothing photo. Try another."
+        }
     }
 
     @ViewBuilder
     private var garmentList: some View {
         if filteredGarments.isEmpty {
-            let nothingSaved = showsSavedOnly && !garments.contains { session.isLiked($0) }
+            let nothingSaved = showsSavedOnly && !allGarments.contains { session.isLiked($0) }
             VStack(spacing: 8) {
                 Image(systemName: nothingSaved ? "heart" : "tshirt")
                     .font(.system(size: 34))

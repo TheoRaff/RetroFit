@@ -1,8 +1,7 @@
 import SwiftUI
-import PhotosUI
 
-/// Full-screen AI try-on: a timed camera photo or a photo from the library, then the AI render
-/// of you wearing the look, one garment at a time.
+/// Full-screen AI try-on: live camera, a countdown, then the AI render of you wearing the look,
+/// one garment at a time.
 struct AITryOnView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var model: AITryOnModel
@@ -10,8 +9,6 @@ struct AITryOnView: View {
     @State private var cameraError: String?
     @State private var toast: String?
     @State private var findIt: Garment?
-    @State private var selectedPhoto: PhotosPickerItem?
-    @State private var isLoadingPhoto = false
     /// Set when Find it is tapped on a look with several garments, to ask which one.
     @State private var choosingFindIt: AITryOnLook?
 
@@ -19,7 +16,7 @@ struct AITryOnView: View {
 
     init(look: AITryOnLook) {
         let photos = look.garments.reduce(into: [String: UIImage]()) { photos, garment in
-            photos[garment.id] = UIImage(named: garment.imageName)
+            photos[garment.id] = ProductPhoto.original(named: garment.imageName)
         }
         _model = State(initialValue: AITryOnModel(
             look: look,
@@ -61,7 +58,6 @@ struct AITryOnView: View {
         .findItPrompt(for: $findIt)
         .preferredColorScheme(.light)
         .task { await startCamera() }
-        .task(id: selectedPhoto) { await loadSelectedPhoto() }
         .onDisappear {
             model.cancel()
             camera.stop()
@@ -109,25 +105,17 @@ struct AITryOnView: View {
         switch model.phase {
         case .camera:
             VStack(spacing: 12) {
-                if let message = toast ?? cameraError {
+                if let message = cameraError ?? toast {
                     Win95Tooltip(text: message)
                 }
-                ShutterButton(isBusy: cameraError != nil || isLoadingPhoto) {
+                ShutterButton(isBusy: cameraError != nil) {
                     model.startCountdown { try await camera.capturePhoto() }
                 }
-                .disabled(isLoadingPhoto)
                 .accessibilityLabel("Start \(model.countdownSeconds) second timer")
                 Text("Tap to start a \(model.countdownSeconds)-second timer")
                     .font(Win95.font(13, relativeTo: .footnote))
                     .foregroundStyle(.white)
                     .shadow(color: .black, radius: 0, x: 1, y: 1)
-                PhotosPicker(selection: $selectedPhoto, matching: .images) {
-                    Label(isLoadingPhoto ? "Loading photo…" : "Choose from Photos", systemImage: "photo")
-                        .font(Win95.font(15, bold: true))
-                        .padding(12)
-                }
-                .buttonStyle(Win95ButtonStyle())
-                .disabled(isLoadingPhoto)
             }
         case .countdown(let seconds):
             Text("\(seconds)")
@@ -176,31 +164,6 @@ struct AITryOnView: View {
     }
 
     // MARK: Actions
-
-    /// Loading is tied to the view and selection, so closing the screen cancels it.
-    private func loadSelectedPhoto() async {
-        guard let item = selectedPhoto else { return }
-        isLoadingPhoto = true
-        toast = nil
-        defer {
-            isLoadingPhoto = false
-            selectedPhoto = nil
-        }
-        do {
-            let data = try await item.loadTransferable(type: Data.self)
-            try Task.checkCancellation()
-            guard let data, let photo = UIImage(data: data) else {
-                toast = "Couldn't open that photo. Try another."
-                return
-            }
-            model.start(photo: photo)
-        } catch is CancellationError {
-            return
-        } catch {
-            guard !Task.isCancelled else { return }
-            toast = "Couldn't load that photo. Try again."
-        }
-    }
 
     private func startCamera() async {
         do {
