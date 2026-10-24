@@ -3,3 +3,13 @@
 .env.*
 !.env.example
 !.env.sample
+
+# Xcode
+xcuserdata/
+DerivedData/
+*.xcuserstate
+*.xcscmblueprint
+.build/
+*.ipa
+*.dSYM*
+*.hmap
