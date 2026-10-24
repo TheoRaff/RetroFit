@@ -18,17 +18,15 @@
       "searchQuery": "y2k white sunglasses",
       "tags": ["mcbling"]
     },
-    
     {
       "id": "y2k-studded-glasses",
       "name": "Y2K Studded Glasses",
       "category": "eyewear",
-      "imageName": "white-shades",
+      "imageName": "y2k-studded-glasses",
       "modelName": "Y2K_glasses",
       "searchQuery": "y2k black studded sunglasses",
       "tags": ["y2k", "edgy", "mcbling"]
     },
-    
     {
       "id": "pink-leopard-bucket-hat",
       "name": "Pink Leopard Bucket Hat",

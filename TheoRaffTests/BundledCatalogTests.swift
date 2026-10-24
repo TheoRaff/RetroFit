@@ -19,9 +19,9 @@ struct BundledCatalogTests {
         #expect(catalog.outfits.count >= 2)
     }
 
-    @Test func includesBothGlassesModels() {
+    @Test func includesEveryGlassesModel() {
         let models = Set(catalog.garments.compactMap(\.modelName))
-        #expect(models.isSuperset(of: ["Y2K_Sport_Sunglass", "White_sunglasses"]))
+        #expect(models.isSuperset(of: ["Y2K_Sport_Sunglass", "White_sunglasses", "Y2K_glasses"]))
     }
 
     /// Try On only shows what the camera can put on you: every pair of glasses and every hat.
@@ -68,6 +68,15 @@ struct BundledCatalogTests {
         for garment in catalog.garments {
             #expect(UIImage(named: garment.imageName) != nil, "No product photo for \(garment.id)")
         }
+    }
+
+    /// A photo borrowed from another garment shows the wrong item in the closet and sends it
+    /// to the AI try-on, so each garment needs its own.
+    @Test func everyGarmentHasItsOwnProductPhoto() {
+        let shared = Dictionary(grouping: catalog.garments, by: \.imageName)
+            .filter { $0.value.count > 1 }
+            .mapValues { $0.map(\.id) }
+        #expect(shared.isEmpty, "Garments sharing a photo: \(shared)")
     }
 
     /// tools/prep-garment.swift draws every cutout on the shared canvas.

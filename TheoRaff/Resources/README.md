@@ -23,10 +23,10 @@ Every garment photo is a transparent PNG on the shared 768 x 960 canvas (`Garmen
 - Photos on a plain background cut out best: flat lays or ghost mannequins, not worn.
 - For tops, check the preview. If the red dots aren't on the shoulder seams, add `--grid /tmp/grid.png`, read the seam pixels off the grid, and pass them as `--shoulders leftX,leftY,rightX,rightY`.
 - `--clear-above Y` erases a hanger hook above row Y.
-- For eyewear and headwear that only exist as USDZ models, render a front view with `xcrun swift tools/render-usdz.swift <model.usdz> /tmp/front.png`, then run `prep-garment.swift` on it with `--keep-background`.
-- Then add the garment to `catalog.json` with the same id as its `imageName`.
+- For eyewear and headwear that only exist as USDZ models, render a front view with `xcrun swift tools/render-usdz.swift <model.usdz> /tmp/front.png`, or a three-quarter shot in Blender with a transparent background, using copies of the `Cam`, `Key`, `Fill` and `Rim` objects from `art/y2k_hats.blend`. Then run `prep-garment.swift` on it with `--keep-background`.
+- Then add the garment to `catalog.json` with the same id as its `imageName`. Every garment needs its own photo: `BundledCatalogTests` fails if two share one.
 
-The first batch is real eBay listing photos (sellers' photos, demo use only). The sunglasses photos are renders of their USDZ models, and the hat photos are three-quarter renders from Blender.
+The first batch is real eBay listing photos (sellers' photos, demo use only). The Sport Shades and White Shades photos are front renders of their USDZ models. The studded glasses and the hats are three-quarter renders from Blender.
 
 ## Hat models
 
