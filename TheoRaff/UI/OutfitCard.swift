@@ -21,7 +21,7 @@ struct OutfitCard: View {
                     .font(Win95.font(17, bold: true, relativeTo: .headline))
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
-                Text(outfit.garments.map(\.name).joined(separator: " · "))
+                Text(subtitle)
                     .font(Win95.font(14, relativeTo: .subheadline))
                     .lineLimit(1)
                 Text("\(position) of \(total)")
@@ -54,6 +54,19 @@ struct OutfitCard: View {
         .accessibilityAction(named: "Previous look") {
             if canGoBack { onBack() }
         }
+    }
+
+    /// What's in the look. A single glasses or hat card says what kind it is instead of
+    /// repeating its name.
+    private var subtitle: String {
+        if outfit.garments.count == 1, let garment = outfit.garments.first {
+            switch garment.category {
+            case .eyewear: return "Glasses · live try-on"
+            case .headwear: return "Hat · live try-on"
+            default: break
+            }
+        }
+        return outfit.garments.map(\.name).joined(separator: " · ")
     }
 
     /// The main piece: the top if the look has one, otherwise its first garment.

@@ -24,6 +24,13 @@ struct BundledCatalogTests {
         #expect(models.isSuperset(of: ["Y2K_Sport_Sunglass", "White_sunglasses"]))
     }
 
+    /// Try On only shows what the camera can put on you: every pair of glasses and every hat.
+    @Test func liveDeckIsEveryARItemAndNothingElse() {
+        let faceItems = catalog.garments.filter { $0.category.liveStyle == .faceModel }
+        #expect(catalog.liveLooks.flatMap(\.garments) == faceItems)
+        #expect(catalog.liveLooks.count >= 6)
+    }
+
     /// A deck look shows glasses or a hat, not both. Both together only when someone picks them.
     @Test func deckLooksWearOneFaceItem() {
         for outfit in catalog.outfits {
