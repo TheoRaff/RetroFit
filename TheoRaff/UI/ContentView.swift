@@ -1,42 +1,65 @@
 import SwiftUI
 
+/// The try-on screen: the live camera with the current outfit on your face.
+/// Swipe left for the next outfit, right to go back, and tap the heart to save it.
 struct ContentView: View {
-    @State private var selectedGlasses = "Y2K_Sport_Sunglass"
+    let session: TryOnSession
+
+    /// How far a drag has to travel sideways to count as a swipe.
+    private let swipeDistance: CGFloat = 60
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            ARViewContainer(modelName: selectedGlasses)
+            ARViewContainer(modelName: session.currentOutfit?.garment(for: .eyewear)?.modelName)
                 .ignoresSafeArea()
 
-            HStack(spacing: 12) {
-                styleButton(title: "Sport", modelName: "Y2K_Sport_Sunglass")
-                styleButton(title: "White", modelName: "White_sunglasses")
+            // The AR view takes touches for itself, so swipes land on this layer above it.
+            Color.clear
+                .contentShape(Rectangle())
+                .gesture(swipeGesture)
+                .ignoresSafeArea()
+
+            if let outfit = session.currentOutfit {
+                OutfitCard(
+                    outfit: outfit,
+                    position: session.currentIndex + 1,
+                    total: session.outfits.count,
+                    isLiked: session.isCurrentOutfitLiked,
+                    canGoBack: session.canShowPrevious,
+                    canGoForward: session.canShowNext,
+                    onBack: { withAnimation(.snappy) { _ = session.showPrevious() } },
+                    onLike: { withAnimation(.snappy) { session.toggleLikeCurrentOutfit() } },
+                    onForward: { withAnimation(.snappy) { _ = session.showNext() } }
+                )
+                .padding(.horizontal, 16)
+                .padding(.bottom, 24)
+            } else {
+                Text("No outfits to try on yet")
+                    .font(.headline)
+                    .padding()
+                    .background(.ultraThinMaterial, in: Capsule())
+                    .padding(.bottom, 40)
             }
-            .padding(10)
-            .background(.ultraThinMaterial, in: Capsule())
-            .padding(.bottom, 30)
+        }
+        .sensoryFeedback(trigger: session.closet.count) { oldCount, newCount in
+            newCount > oldCount ? .success : nil
         }
     }
 
-    private func styleButton(title: String, modelName: String) -> some View {
-        Button {
-            selectedGlasses = modelName
-        } label: {
-            Text(title)
-                .font(.headline)
-                .foregroundStyle(selectedGlasses == modelName ? .white : .primary)
-                .padding(.horizontal, 18)
-                .padding(.vertical, 12)
-                .background {
-                    if selectedGlasses == modelName {
-                        Capsule().fill(Color.blue)
-                    }
+    private var swipeGesture: some Gesture {
+        DragGesture(minimumDistance: 30)
+            .onEnded { value in
+                let sideways = value.translation.width
+                guard abs(sideways) > abs(value.translation.height), abs(sideways) > swipeDistance else {
+                    return
                 }
-        }
-        .buttonStyle(.plain)
+                withAnimation(.snappy) {
+                    _ = sideways < 0 ? session.showNext() : session.showPrevious()
+                }
+            }
     }
 }
 
 #Preview {
-    ContentView()
+    ContentView(session: TryOnSession(outfits: SampleCatalog.outfits()))
 }

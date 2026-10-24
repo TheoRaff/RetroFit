@@ -3,7 +3,8 @@ import RealityKit
 import ARKit
 
 struct ARViewContainer: UIViewRepresentable {
-    let modelName: String
+    /// USDZ model to wear on the face, or nil to show no glasses.
+    let modelName: String?
 
     func makeCoordinator() -> Coordinator {
         Coordinator()
@@ -41,7 +42,7 @@ struct ARViewContainer: UIViewRepresentable {
         private var glassesBoundsCenter = SIMD3<Float>(repeating: 0)
         private var selectedModelName: String?
 
-        func setModel(_ name: String) {
+        func setModel(_ name: String?) {
             guard selectedModelName != name else { return }
             selectedModelName = name
 
@@ -79,12 +80,18 @@ struct ARViewContainer: UIViewRepresentable {
         }
 
         private func loadSelectedModel() {
-            guard let selectedModelName, let faceEntity else {
+            guard let faceEntity else {
                 return
             }
 
             if let glassesEntity {
                 faceEntity.removeChild(glassesEntity)
+            }
+            glassesEntity = nil
+            glassesBaseWidth = 0
+
+            guard let selectedModelName else {
+                return
             }
 
             do {
