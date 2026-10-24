@@ -1,0 +1,12 @@
+{
+  "images" : [
+    {
+      "filename" : "metallic-halter-top.png",
+      "idiom" : "universal"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}

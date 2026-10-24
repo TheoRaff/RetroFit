@@ -1,12 +1,13 @@
 import SwiftUI
 
 /// The try-on screen: the live camera with the current outfit on your face.
-/// Swipe left for the next outfit, right to go back, tap the heart to save it,
+/// Swipe left or tap Skip for the next outfit, swipe right to go back, tap Like to save it,
 /// and tap the shutter to save a photo to your camera roll.
 struct ContentView: View {
     let session: TryOnSession
 
     @State private var snapshotter = ARSnapshotter()
+    @State private var glasses = GlassesTracker()
     @State private var isCapturing = false
     @State private var showFlash = false
     @State private var toast: String?
@@ -20,9 +21,13 @@ struct ContentView: View {
         ZStack(alignment: .bottom) {
             ARViewContainer(
                 modelName: session.currentOutfit?.garment(for: .eyewear)?.modelName,
-                snapshotter: snapshotter
+                snapshotter: snapshotter,
+                onGlassesFrame: { [glasses] frame in glasses.frame = frame }
             )
             .ignoresSafeArea()
+            .overlay {
+                GlassesMarquee(tracker: glasses).ignoresSafeArea()
+            }
 
             // The AR view takes touches for itself, so swipes land on this layer above it.
             Color.clear
@@ -30,20 +35,17 @@ struct ContentView: View {
                 .gesture(swipeGesture)
                 .ignoresSafeArea()
 
-            VStack(spacing: 16) {
+            VStack(spacing: 12) {
                 if let toast {
-                    Text(toast)
-                        .font(.subheadline.weight(.semibold))
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 10)
-                        .background(.ultraThinMaterial, in: Capsule())
+                    Win95Tooltip(text: toast)
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
                 ShutterButton(isBusy: isCapturing, action: capturePhoto)
+                    .padding(.bottom, 8)
                 outfitControls
             }
             .padding(.horizontal, 16)
-            .padding(.bottom, 24)
+            .padding(.bottom, 13)
 
             if showFlash {
                 Color.white
@@ -61,22 +63,60 @@ struct ContentView: View {
     @ViewBuilder
     private var outfitControls: some View {
         if let outfit = session.currentOutfit {
-            OutfitCard(
-                outfit: outfit,
-                position: session.currentIndex + 1,
-                total: session.outfits.count,
-                isLiked: session.isCurrentOutfitLiked,
-                canGoBack: session.canShowPrevious,
-                canGoForward: session.canShowNext,
-                onBack: { withAnimation(.snappy) { _ = session.showPrevious() } },
-                onLike: { withAnimation(.snappy) { session.toggleLikeCurrentOutfit() } },
-                onForward: { withAnimation(.snappy) { _ = session.showNext() } }
-            )
+            VStack(spacing: 12) {
+                OutfitCard(
+                    outfit: outfit,
+                    position: session.currentIndex + 1,
+                    total: session.outfits.count,
+                    canGoBack: session.canShowPrevious,
+                    canGoForward: session.canShowNext,
+                    onBack: { withAnimation(.snappy) { _ = session.showPrevious() } },
+                    onForward: { withAnimation(.snappy) { _ = session.showNext() } }
+                )
+                .contentShape(Rectangle())
+                .gesture(swipeGesture)
+                deckButtons
+            }
         } else {
-            Text("No outfits to try on yet")
-                .font(.headline)
-                .padding()
-                .background(.ultraThinMaterial, in: Capsule())
+            Win95Tooltip(text: "No outfits to try on yet")
+        }
+    }
+
+    /// Skip and Like, the two big buttons under the card. On the last look, Skip becomes
+    /// Start over, so the deck never looks stuck.
+    private var deckButtons: some View {
+        let isLiked = session.isCurrentOutfitLiked
+        let atEnd = !session.canShowNext
+        return HStack(spacing: 12) {
+            Button {
+                withAnimation(.snappy) {
+                    if atEnd, let first = session.outfits.first {
+                        session.show(outfitID: first.id)
+                    } else {
+                        session.showNext()
+                    }
+                }
+            } label: {
+                Label(atEnd ? "Start over" : "Skip", systemImage: atEnd ? "arrow.counterclockwise" : "xmark")
+                    .font(Win95.font(17, relativeTo: .headline))
+                    .labelStyle(Win95ButtonLabelStyle())
+                    .frame(maxWidth: .infinity, minHeight: 52)
+            }
+            .buttonStyle(Win95ButtonStyle())
+            .accessibilityLabel(atEnd ? "Start the deck again" : "Skip this look")
+
+            Button {
+                withAnimation(.snappy) { session.toggleLikeCurrentOutfit() }
+            } label: {
+                HStack(spacing: 8) {
+                    Win95Heart()
+                    Text(isLiked ? "Liked" : "Like")
+                        .font(Win95.font(17, bold: true, relativeTo: .headline))
+                }
+                .frame(maxWidth: .infinity, minHeight: 52)
+            }
+            .buttonStyle(Win95ButtonStyle(isOn: isLiked))
+            .accessibilityLabel(isLiked ? "Remove this look from your closet" : "Save this look to your closet")
         }
     }
 

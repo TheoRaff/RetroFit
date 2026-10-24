@@ -81,6 +81,62 @@
       "imageName": "pleated-mini-skirt",
       "searchQuery": "y2k pleated mini skirt",
       "tags": ["preppy"]
+    },
+    {
+      "id": "basketball-jersey",
+      "name": "Number 23 Jersey",
+      "category": "top",
+      "imageName": "basketball-jersey",
+      "searchQuery": "y2k basketball jersey",
+      "tags": ["sporty", "hip-hop"]
+    },
+    {
+      "id": "bowling-shirt",
+      "name": "Flame Bowling Shirt",
+      "category": "top",
+      "imageName": "bowling-shirt",
+      "searchQuery": "y2k flame bowling shirt",
+      "tags": ["skater"]
+    },
+    {
+      "id": "metallic-halter-top",
+      "name": "Silver Halter Top",
+      "category": "top",
+      "imageName": "metallic-halter-top",
+      "searchQuery": "y2k metallic silver halter top",
+      "tags": ["mcbling", "going-out"]
+    },
+    {
+      "id": "baggy-jeans",
+      "name": "Baggy Skater Jeans",
+      "category": "bottom",
+      "imageName": "baggy-jeans",
+      "searchQuery": "y2k baggy jeans",
+      "tags": ["skater", "denim"]
+    },
+    {
+      "id": "camo-cargo-pants",
+      "name": "Camo Cargo Trousers",
+      "category": "bottom",
+      "imageName": "camo-cargo-pants",
+      "searchQuery": "y2k camo cargo pants",
+      "tags": ["skater", "utility"]
+    },
+    {
+      "id": "camo-cargo-shorts",
+      "name": "Camo Cargo Shorts",
+      "category": "bottom",
+      "imageName": "camo-cargo-shorts",
+      "searchQuery": "y2k camo cargo shorts",
+      "tags": ["skater", "utility"]
+    },
+    {
+      "id": "denim-mini-skirt",
+      "name": "Denim Mini Skirt",
+      "category": "bottom",
+      "imageName": "denim-mini-skirt",
+      "searchQuery": "y2k denim mini skirt",
+      "tags": ["denim"]
     }
   ],
   "outfits": [
@@ -89,6 +145,10 @@
     { "id": "butterfly-baby", "name": "Butterfly Baby", "garmentIDs": ["butterfly-baby-tee", "low-rise-flare-jeans", "y2k-sport-shades"] },
     { "id": "leopard-night-out", "name": "Leopard Night Out", "garmentIDs": ["leopard-satin-halter", "pleated-mini-skirt", "white-shades"] },
     { "id": "mesh-moment", "name": "Mesh Moment", "garmentIDs": ["mesh-long-sleeve-top", "low-rise-flare-jeans", "y2k-sport-shades"] },
-    { "id": "ringer-rewind", "name": "Ringer Rewind", "garmentIDs": ["ringer-baby-tee", "pleated-mini-skirt", "white-shades"] }
+    { "id": "ringer-rewind", "name": "Ringer Rewind", "garmentIDs": ["ringer-baby-tee", "pleated-mini-skirt", "white-shades"] },
+    { "id": "court-kings", "name": "Court Kings", "garmentIDs": ["basketball-jersey", "baggy-jeans", "y2k-sport-shades"] },
+    { "id": "flame-on", "name": "Flame On", "garmentIDs": ["bowling-shirt", "camo-cargo-shorts", "white-shades"] },
+    { "id": "chrome-club", "name": "Chrome Club", "garmentIDs": ["metallic-halter-top", "denim-mini-skirt", "white-shades"] },
+    { "id": "street-camo", "name": "Street Camo", "garmentIDs": ["ed-hardy-track-jacket", "camo-cargo-pants", "y2k-sport-shades"] }
   ]
 }
