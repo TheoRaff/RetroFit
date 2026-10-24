@@ -1,6 +1,7 @@
 import SwiftUI
 
-/// Full-screen AI try-on: live camera, a countdown, then the AI render of you wearing the garment.
+/// Full-screen AI try-on: live camera, a countdown, then the AI render of you wearing the look,
+/// one garment at a time.
 struct AITryOnView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var model: AITryOnModel
@@ -8,13 +9,18 @@ struct AITryOnView: View {
     @State private var cameraError: String?
     @State private var toast: String?
     @State private var findIt: Garment?
+    /// Set when Find it is tapped on a look with several garments, to ask which one.
+    @State private var choosingFindIt: AITryOnLook?
 
     private let photoSaver = TryOnPhotoSaver(library: SystemPhotoLibrary())
 
-    init(garment: Garment) {
+    init(look: AITryOnLook) {
+        let photos = look.garments.reduce(into: [String: UIImage]()) { photos, garment in
+            photos[garment.id] = UIImage(named: garment.imageName)
+        }
         _model = State(initialValue: AITryOnModel(
-            garment: garment,
-            productImage: UIImage(named: garment.imageName),
+            look: look,
+            productImages: photos,
             makeRenderer: { RenderService(config: try RenderConfig.fromBundle()) }
         ))
     }
@@ -30,6 +36,23 @@ struct AITryOnView: View {
                 Spacer()
                 overlay
                     .padding(16)
+            }
+        }
+        .win95Modal(item: $choosingFindIt) { look in
+            Win95MessageBox(
+                title: "Find it second-hand",
+                message: "Which piece do you want to find?",
+                systemImage: "bag.circle.fill",
+                onClose: { choosingFindIt = nil }
+            ) {
+                VStack(spacing: 8) {
+                    ForEach(look.garments) { garment in
+                        Win95DialogButton(title: garment.name) {
+                            choosingFindIt = nil
+                            findIt = garment
+                        }
+                    }
+                }
             }
         }
         .findItPrompt(for: $findIt)
@@ -63,9 +86,9 @@ struct AITryOnView: View {
         }
     }
 
-    /// A window caption with the garment's name, and flip-camera and close buttons on the right.
+    /// A window caption with the look's name, and flip-camera and close buttons on the right.
     private var titleBar: some View {
-        Win95TitleBar(title: "AI Try On: \(model.garment.name)", centred: false) {
+        Win95TitleBar(title: "AI Try On: \(model.look.title)", centred: false) {
             HStack(spacing: 2) {
                 if model.phase == .camera {
                     captionButton("arrow.triangle.2.circlepath.camera", label: "Flip camera") {
@@ -102,8 +125,8 @@ struct AITryOnView: View {
                 .contentTransition(.numericText(countsDown: true))
                 .animation(.snappy, value: seconds)
                 .frame(maxHeight: .infinity)
-        case .rendering(let status):
-            BufferingBar(text: AITryOnModel.progressText(for: status))
+        case .rendering:
+            BufferingBar(text: model.progressText)
                 .padding(.bottom, 40)
         case .result(let url):
             VStack(spacing: 12) {
@@ -115,7 +138,13 @@ struct AITryOnView: View {
                     }
                 }
                 HStack(spacing: 12) {
-                    pillButton("Find it", systemImage: "bag") { findIt = model.garment }
+                    pillButton("Find it", systemImage: "bag") {
+                        if model.look.pieceCount == 1 {
+                            findIt = model.look.garments.first
+                        } else {
+                            choosingFindIt = model.look
+                        }
+                    }
                     pillButton("Done", systemImage: "checkmark") { dismiss() }
                 }
             }

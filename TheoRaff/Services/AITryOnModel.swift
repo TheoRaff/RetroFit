@@ -1,18 +1,19 @@
 import Observation
 import UIKit
 
-/// Anything that can put a garment on a person photo with AI. `RenderService` is the real one.
+/// Anything that can put a garment on a person with AI. `RenderService` is the real one.
 protocol TryOnRendering: Sendable {
-    func render(person: UIImage, clothing: UIImage, onStatus: @escaping @Sendable (RenderStatus) -> Void) async throws -> URL
+    func render(person: RenderPerson, clothing: UIImage, onStatus: @escaping @Sendable (RenderStatus) -> Void) async throws -> URL
 }
 
 extension RenderService: TryOnRendering {
-    func render(person: UIImage, clothing: UIImage, onStatus: @escaping @Sendable (RenderStatus) -> Void) async throws -> URL {
+    func render(person: RenderPerson, clothing: UIImage, onStatus: @escaping @Sendable (RenderStatus) -> Void) async throws -> URL {
         try await render(person: person, clothing: clothing, preservePose: true, aspectRatio: .portrait, onStatus: onStatus)
     }
 }
 
-/// The AI try-on flow for one garment: camera, countdown, photo, AI render, result.
+/// The AI try-on flow for a look: camera, countdown, photo, then one AI render per garment,
+/// each drawn onto the result of the one before, then the result.
 @MainActor
 @Observable
 final class AITryOnModel {
@@ -24,39 +25,60 @@ final class AITryOnModel {
         case failed(String)
     }
 
-    let garment: Garment
+    let look: AITryOnLook
     let countdownSeconds: Int
     private(set) var phase: Phase
     private(set) var capturedPhoto: UIImage?
+    /// Which garment is being rendered, counting from 0.
+    private(set) var renderingPiece = 0
 
-    private let productImage: UIImage?
+    private let productImages: [String: UIImage]
     private let makeRenderer: () throws -> TryOnRendering
     private let sleep: (Duration) async throws -> Void
     private var task: Task<Void, Never>?
 
+    /// `productImages` holds each garment's photo by garment id.
     init(
+        look: AITryOnLook,
+        productImages: [String: UIImage],
+        countdownSeconds: Int = 5,
+        makeRenderer: @escaping () throws -> TryOnRendering,
+        sleep: @escaping (Duration) async throws -> Void = { try await Task.sleep(for: $0) }
+    ) {
+        self.look = look
+        self.productImages = productImages
+        self.countdownSeconds = countdownSeconds
+        self.makeRenderer = makeRenderer
+        self.sleep = sleep
+        self.phase = .camera
+        self.phase = startingPhase
+    }
+
+    /// One garment, as from the closet.
+    convenience init(
         garment: Garment,
         productImage: UIImage?,
         countdownSeconds: Int = 5,
         makeRenderer: @escaping () throws -> TryOnRendering,
         sleep: @escaping (Duration) async throws -> Void = { try await Task.sleep(for: $0) }
     ) {
-        self.garment = garment
-        self.productImage = productImage
-        self.countdownSeconds = countdownSeconds
-        self.makeRenderer = makeRenderer
-        self.sleep = sleep
-        self.phase = productImage == nil ? .failed(Self.missingPhotoMessage(for: garment)) : .camera
+        self.init(
+            look: AITryOnLook(garment: garment),
+            productImages: productImage.map { [garment.id: $0] } ?? [:],
+            countdownSeconds: countdownSeconds,
+            makeRenderer: makeRenderer,
+            sleep: sleep
+        )
     }
 
     var canStartCountdown: Bool { phase == .camera }
 
-    /// The shutter: counts down, takes the photo with `capture`, then renders the garment onto it.
+    /// The shutter: counts down, takes the photo with `capture`, then renders the look onto it.
     func startCountdown(capture: @escaping @MainActor () async throws -> UIImage) {
-        guard canStartCountdown, let productImage else { return }
+        guard canStartCountdown, let pieces = renderPieces else { return }
         phase = .countdown(countdownSeconds)
         task = Task { [weak self] in
-            await self?.run(productImage: productImage, capture: capture)
+            await self?.run(pieces: pieces, capture: capture)
         }
     }
 
@@ -64,7 +86,8 @@ final class AITryOnModel {
         task?.cancel()
         task = nil
         capturedPhoto = nil
-        phase = productImage == nil ? .failed(Self.missingPhotoMessage(for: garment)) : .camera
+        renderingPiece = 0
+        phase = startingPhase
     }
 
     func cancel() {
@@ -81,6 +104,14 @@ final class AITryOnModel {
         phase = .rendering(status)
     }
 
+    /// The Buffering… text, naming the garment being rendered when there's more than one.
+    var progressText: String {
+        let status: RenderStatus? = if case .rendering(let status) = phase { status } else { nil }
+        let buffering = Self.progressText(for: status)
+        guard look.pieceCount > 1, look.garments.indices.contains(renderingPiece) else { return buffering }
+        return "\(look.garments[renderingPiece].name) (\(renderingPiece + 1) of \(look.pieceCount))\n\(buffering)"
+    }
+
     static func progressText(for status: RenderStatus?) -> String {
         switch status {
         case .queued(let position?) where position > 0: return "Buffering… \(position) ahead of you"
@@ -91,7 +122,20 @@ final class AITryOnModel {
 
     // MARK: Steps
 
-    private func run(productImage: UIImage, capture: @MainActor () async throws -> UIImage) async {
+    /// Each garment with its photo, or nil when one is missing.
+    private var renderPieces: [(Garment, UIImage)]? {
+        let pieces = look.garments.compactMap { garment in productImages[garment.id].map { (garment, $0) } }
+        return pieces.count == look.garments.count && !pieces.isEmpty ? pieces : nil
+    }
+
+    private var startingPhase: Phase {
+        if let missing = look.garments.first(where: { productImages[$0.id] == nil }) {
+            return .failed(Self.missingPhotoMessage(for: missing))
+        }
+        return .camera
+    }
+
+    private func run(pieces: [(Garment, UIImage)], capture: @MainActor () async throws -> UIImage) async {
         let renderer: TryOnRendering
         do {
             renderer = try makeRenderer()
@@ -109,12 +153,21 @@ final class AITryOnModel {
                 return
             }
             capturedPhoto = photo
-            phase = .rendering(nil)
-            let url = try await renderer.render(person: photo, clothing: productImage) { [weak self] status in
-                Task { @MainActor in self?.applyRenderStatus(status) }
+            var person = RenderPerson.photo(photo)
+            var latest: URL?
+            for (index, piece) in pieces.enumerated() {
+                renderingPiece = index
+                phase = .rendering(nil)
+                let url = try await renderer.render(person: person, clothing: piece.1) { [weak self] status in
+                    Task { @MainActor in self?.applyRenderStatus(status) }
+                }
+                try Task.checkCancellation()
+                person = .url(url)
+                latest = url
             }
-            try Task.checkCancellation()
-            phase = .result(url)
+            if let latest {
+                phase = .result(latest)
+            }
         } catch is CancellationError {
             return
         } catch {
