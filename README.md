@@ -1,4 +1,6 @@
-# TheoRaff
+# RetroFit
+
+The app is called RetroFit. The Xcode project, target and folders are still named TheoRaff.
 
 Our hackathon project.
 
