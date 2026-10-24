@@ -42,7 +42,7 @@ struct ContentView: View {
                 }
                 ShutterButton(isBusy: isCapturing, action: capturePhoto)
                     .frame(maxWidth: .infinity)
-                    .overlay(alignment: .trailing) { aiButton }
+                    .overlay(alignment: .trailing) { }
                     .padding(.bottom, 8)
                 outfitControls
             }
@@ -85,24 +85,7 @@ struct ContentView: View {
     }
 
     /// Tries the whole current look on with AI, every piece of clothing in it.
-    @ViewBuilder
-    private var aiButton: some View {
-        if let outfit = session.currentOutfit {
-            Button {
-                tryOnPrompt = AITryOnLook(outfit: outfit)
-            } label: {
-                VStack(spacing: 2) {
-                    Image(systemName: "wand.and.stars")
-                        .font(.system(size: 18, weight: .semibold))
-                    Text("AI")
-                        .font(Win95.font(12, bold: true))
-                }
-                .frame(width: 58, height: 52)
-            }
-            .buttonStyle(Win95ButtonStyle())
-            .accessibilityLabel("Try this look on with AI")
-        }
-    }
+
 
     /// Skip and Like, the two big buttons under the card. On the last look, Skip becomes
     /// Start over, so the deck never looks stuck.
