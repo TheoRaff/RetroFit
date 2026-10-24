@@ -1,8 +1,9 @@
 import SwiftUI
 
-/// The try-on screen: the live camera with the current outfit on your face.
-/// Swipe left or tap Skip for the next outfit, swipe right to go back, tap Like to save it,
-/// tap the shutter to save a photo to your camera roll, and tap AI to try the whole look on with AI.
+/// The try-on screen: the live camera with the current glasses or hat on your face. The deck
+/// only holds items the camera can show live; clothes are tried on with AI from the closet.
+/// Swipe left or tap Skip for the next item, swipe right to go back, tap Like to save it,
+/// tap the shutter to save a photo to your camera roll, and tap AI to try it on with AI.
 struct ContentView: View {
     let session: TryOnSession
     /// Shown by `AppShellView`, so the dialog covers the tab bar too.
@@ -21,7 +22,9 @@ struct ContentView: View {
     var body: some View {
         ZStack(alignment: .bottom) {
             ARViewContainer(
-                modelName: session.currentOutfit?.garment(for: .eyewear)?.modelName,
+                glassesModel: session.currentOutfit?.garment(for: .eyewear)?.modelName,
+                hatModel: session.currentOutfit?.garment(for: .headwear)?.modelName,
+                preloadModels: session.outfits.flatMap(\.garments).compactMap(\.modelName),
                 snapshotter: snapshotter
             )
             .ignoresSafeArea()
@@ -190,5 +193,5 @@ struct ContentView: View {
 }
 
 #Preview {
-    ContentView(session: TryOnSession(outfits: Catalog.bundled.outfits), tryOnPrompt: .constant(nil))
+    ContentView(session: TryOnSession(outfits: Catalog.bundled.liveLooks), tryOnPrompt: .constant(nil))
 }

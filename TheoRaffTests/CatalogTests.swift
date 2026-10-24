@@ -26,6 +26,14 @@ struct CatalogTests {
         #expect(look.garments.map(\.id) == ["hoodie", "shades"])
     }
 
+    /// The Try On deck: one card per item the camera can put on you. Clothes are left to the AI.
+    @Test func liveDeckHasOneCardPerFaceItem() throws {
+        let catalog = try catalog(garments: [hoodie, shades, cap], outfits: ["look": ["hoodie", "shades"]])
+        #expect(catalog.liveLooks.map(\.id) == ["shades", "cap"])
+        #expect(catalog.liveLooks.map(\.name) == ["Tinted Shades", "Trucker Cap"])
+        #expect(catalog.liveLooks.map { $0.garments.map(\.id) } == [["shades"], ["cap"]])
+    }
+
     @Test func oneGarmentCanBeInSeveralOutfits() throws {
         let catalog = try catalog(garments: [shades, hoodie], outfits: ["a": ["shades"], "b": ["hoodie", "shades"]])
         #expect(catalog.outfits.map(\.id) == ["a", "b"])

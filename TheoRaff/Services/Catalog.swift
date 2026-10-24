@@ -27,8 +27,11 @@ enum CatalogError: Error, Equatable {
 struct Catalog: Equatable, Sendable {
     /// Every garment, in file order. The closet shows these.
     let garments: [Garment]
-    /// The try-on deck, in file order.
+    /// Outfits from the file, in file order.
     let outfits: [Outfit]
+    /// The Try On deck: one look per garment the camera can put on you live (glasses and
+    /// hats), in file order. Clothes can't be shown live, so they're tried on with AI from the closet.
+    let liveLooks: [Outfit]
 
     /// The catalog that ships in the app, loaded once. Empty, with the error logged,
     /// when catalog.json is missing or invalid. It doesn't crash, so the app still opens
@@ -68,6 +71,9 @@ struct Catalog: Equatable, Sendable {
     private init(garments: [Garment], outfits: [Outfit]) {
         self.garments = garments
         self.outfits = outfits
+        self.liveLooks = garments
+            .filter { $0.category.liveStyle == .faceModel }
+            .compactMap { try? Outfit(id: $0.id, name: $0.name, garments: [$0]) }
     }
 }
 
