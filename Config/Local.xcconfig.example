@@ -7,3 +7,7 @@ DEVELOPMENT_TEAM = YOUR_TEAM_ID
 
 // Makes your bundle ID unique, for example .raff or .theo
 BUNDLE_ID_SUFFIX = .yourname
+
+// The APP_TOKEN set on the Vercel render function. Ask whoever set it up.
+// Leave the placeholder to build without rendering.
+RENDER_API_TOKEN = PASTE_APP_TOKEN_HERE

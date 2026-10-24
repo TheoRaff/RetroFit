@@ -20,6 +20,15 @@ enum SampleCatalog {
                         searchQuery: "y2k white sunglasses", tags: ["mcbling"]
                     ),
                 ]),
+                // fal.ai's example product photo, for testing the AI try-on until real
+                // Y2K product photos are added. Replace before the demo.
+                Outfit(id: "fal-test-tee-look", name: "Test Tee", garments: [
+                    Garment(
+                        id: "fal-test-tee", name: "Test Tee (fal sample)", category: .top,
+                        imageName: "fal-test-tee",
+                        searchQuery: "black graphic tee", tags: ["test"]
+                    ),
+                ]),
                 Outfit(id: "velour-hoodie-look", name: "Pink Velour Hoodie", garments: [
                     Garment(
                         id: "pink-velour-hoodie", name: "Pink Velour Hoodie", category: .top,

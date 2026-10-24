@@ -6,10 +6,6 @@
 	objectVersion = 77;
 	objects = {
 
-/* Begin PBXBuildFile section */
-		09CFF252308CC3E80099DFEE /* testing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09CFF251308CC3E50099DFEE /* testing.swift */; };
-/* End PBXBuildFile section */
-
 /* Begin PBXContainerItemProxy section */
 		A10000000000000000000026 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -21,7 +17,6 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		09CFF251308CC3E50099DFEE /* testing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = testing.swift; sourceTree = "<group>"; };
 		A10000000000000000000001 /* TheoRaff.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TheoRaff.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A10000000000000000000011 /* Shared.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Shared.xcconfig; sourceTree = "<group>"; };
 		A10000000000000000000020 /* TheoRaffTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TheoRaffTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -78,7 +73,6 @@
 		A10000000000000000000004 = {
 			isa = PBXGroup;
 			children = (
-				09CFF251308CC3E50099DFEE /* testing.swift */,
 				A10000000000000000000002 /* TheoRaff */,
 				A10000000000000000000021 /* TheoRaffTests */,
 				A10000000000000000000012 /* Config */,
@@ -212,7 +206,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				09CFF252308CC3E80099DFEE /* testing.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

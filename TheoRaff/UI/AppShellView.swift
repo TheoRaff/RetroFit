@@ -56,6 +56,7 @@ private struct ClosetView: View {
 
     @State private var searchText = ""
     @State private var selectedCategory = ClosetCategory.all
+    @State private var tryOnPrompt: Garment?
 
     private let columns = [
         GridItem(.flexible(), spacing: 12),
@@ -114,6 +115,8 @@ private struct ClosetView: View {
                         LazyVGrid(columns: columns, spacing: 12) {
                             ForEach(filteredGarments) { garment in
                                 GarmentCard(garment: garment, session: session)
+                                    .contentShape(Rectangle())
+                                    .onTapGesture { tryOnPrompt = garment }
                             }
                         }
                         .padding(.bottom, 12)
@@ -123,6 +126,7 @@ private struct ClosetView: View {
             .padding()
             .background(Color(uiColor: .systemGroupedBackground))
             .navigationTitle("Closet")
+            .aiTryOnPrompt(for: $tryOnPrompt)
         }
     }
 }

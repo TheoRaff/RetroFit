@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+import UIKit
 @testable import TheoRaff
 
 struct SampleCatalogTests {
@@ -35,4 +36,10 @@ struct SampleCatalogTests {
         let firstID = await session.currentOutfit?.id
         #expect(firstID == outfits.first?.id)
     }
+
+    @Test func testTeeHasAProductPhotoForAITryOn() throws {
+        let tee = try #require(outfits.flatMap(\.garments).first { $0.id == "fal-test-tee" })
+        #expect(UIImage(named: tee.imageName) != nil)
+    }
 }
+
