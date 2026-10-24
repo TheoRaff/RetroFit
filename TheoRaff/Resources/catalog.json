@@ -18,6 +18,17 @@
       "searchQuery": "y2k white sunglasses",
       "tags": ["mcbling"]
     },
+    
+    {
+      "id": "y2k-studded-glasses",
+      "name": "Y2K Studded Glasses",
+      "category": "eyewear",
+      "imageName": "white-shades",
+      "modelName": "Y2K_glasses",
+      "searchQuery": "y2k black studded sunglasses",
+      "tags": ["y2k", "edgy", "mcbling"]
+    },
+    
     {
       "id": "pink-velour-hoodie",
       "name": "Pink Velour Hoodie",
@@ -149,6 +160,11 @@
     { "id": "court-kings", "name": "Court Kings", "garmentIDs": ["basketball-jersey", "baggy-jeans", "y2k-sport-shades"] },
     { "id": "flame-on", "name": "Flame On", "garmentIDs": ["bowling-shirt", "camo-cargo-shorts", "white-shades"] },
     { "id": "chrome-club", "name": "Chrome Club", "garmentIDs": ["metallic-halter-top", "denim-mini-skirt", "white-shades"] },
-    { "id": "street-camo", "name": "Street Camo", "garmentIDs": ["ed-hardy-track-jacket", "camo-cargo-pants", "y2k-sport-shades"] }
+    { "id": "street-camo", "name": "Street Camo", "garmentIDs": ["ed-hardy-track-jacket", "camo-cargo-pants", "y2k-sport-shades"] },
+    {
+      "id": "y2k-studded-glasses-look",
+      "name": "Studded Shades",
+      "garmentIDs": ["y2k-studded-glasses"]
+    }
   ]
 }
