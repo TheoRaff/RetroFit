@@ -5,6 +5,8 @@ import ARKit
 struct ARViewContainer: UIViewRepresentable {
     /// USDZ model to wear on the face, or nil to show no glasses.
     let modelName: String?
+    /// Receives the AR view so the screen can take photos of it.
+    var snapshotter: ARSnapshotter? = nil
 
     func makeCoordinator() -> Coordinator {
         Coordinator()
@@ -12,6 +14,7 @@ struct ARViewContainer: UIViewRepresentable {
 
     func makeUIView(context: Context) -> ARView {
         let arView = ARView(frame: .zero)
+        snapshotter?.arView = arView
 
         guard ARFaceTrackingConfiguration.isSupported else {
             print("Face tracking is not supported.")
