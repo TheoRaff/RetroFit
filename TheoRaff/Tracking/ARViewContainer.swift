@@ -54,7 +54,8 @@ struct ARViewContainer: UIViewRepresentable {
                 )
 
                 // Adjust this after checking the first on-device result.
-                loadedEntity.scale = SIMD3<Float>(repeating: 0.01)
+                loadedEntity.scale = SIMD3<Float>(repeating: 0.0035)
+                loadedEntity.position = SIMD3<Float>(0, -0.025, 0.02)
 
                 let faceEntity = AnchorEntity(anchor: faceAnchor)
                 faceEntity.addChild(loadedEntity)
