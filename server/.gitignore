@@ -1,0 +1,6 @@
+# Installed packages: npm install recreates them
+node_modules/
+
+# Vercel's local project link and env files pulled with `vercel env pull`
+.vercel/
+.env*.local
