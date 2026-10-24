@@ -67,6 +67,15 @@
       ]
     },
     {
+      "id": "violet-butterfly-shades",
+      "name": "Violet Butterfly Shades",
+      "category": "eyewear",
+      "imageName": "violet-butterfly-shades",
+      "modelName": "Y2K_Violet_Butterfly",
+      "searchQuery": "y2k violet butterfly cat eye rhinestone sunglasses",
+      "tags": ["y2k", "mcbling", "butterfly"]
+    },
+    {
       "id": "pink-leopard-bucket-hat",
       "name": "Pink Leopard Bucket Hat",
       "category": "headwear",

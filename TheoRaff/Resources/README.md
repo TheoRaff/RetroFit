@@ -49,3 +49,9 @@ Ice Blue Rimless, Candy Pink Ovals and Amber Wrap Shades are original RetroFit m
 The source is `art/y2k_eyewear.blend`, with one scene per style. Rebuild it with Blender's `--python tools/build-eyewear.py` (or run that file in Blender's scripting workspace). The script uses copies of the hat product-shot rig, writes previews to `build/eyewear-previews`, exports selected meshes only, and restores the existing scene without saving it. Re-run `prep-garment.swift <preview> <id> --keep-background` for each preview.
 
 The exports use metres, +y up and +z forward, with lenses in front and temples extending towards -z. They use the existing glasses bounds-based fit without model-specific offsets. `EyewearAssetTests` loads the actual bundled files through `FaceModelLibrary`, checks their dimensions, and verifies lens positions after the current AR fitting transform.
+
+### Violet Butterfly Shades
+
+`Y2K_Violet_Butterfly.usdz` adds an original swept butterfly frame with polished silver rims, ten small crystal accents and violet gradient lenses. Its gradient texture is embedded in the USDZ; the 151 KB file has 9,852 triangles. The editable source is `art/y2k_violet_butterfly.blend`, with the image packed in. Its own Blender render is `violet-butterfly-shades.imageset`, prepared on the shared 768 x 960 canvas.
+
+The model uses the same coordinates and bounds-based glasses fit as the other eyewear. `EyewearAssetTests` checks its loading, dimensions, fitted lens positions, catalog/deck entry and embedded gradient material.
