@@ -16,6 +16,15 @@ Each folder has one owner, which keeps project-file conflicts away.
 - `TheoRaff/UI`: Person B. Screens and the chrome design system.
 - `TheoRaff/Services`: Person B. Catalog and AI render calls.
 - `TheoRaff/Resources`: shared. Assets, cutouts, models, fonts.
+- `TheoRaff/Shared`: both. `Garment`, `Outfit` and `TryOnSession`, the contract between tracking and the app. Agree changes together.
+- `TheoRaffTests`: unit tests. Run them with ⌘U.
+
+### How the try-on screen works
+
+- The deck is a list of outfits. Each outfit holds one garment per category, such as shades plus a hoodie.
+- Swiping calls `showNext()` or `showPrevious()` to move between outfits.
+- The Like button calls `likeCurrentOutfit()`, which saves the outfit's garments to the closet. `like(_:)` saves a single garment.
+- Tracking reads `currentOutfit` and draws its garments on the camera view.
 
 ### Run on your iPhone
 
