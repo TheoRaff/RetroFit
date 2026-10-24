@@ -6,7 +6,7 @@ struct TheoRaffApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView(session: session)
+            AppShellView(session: session)
         }
     }
 }
