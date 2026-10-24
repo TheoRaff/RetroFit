@@ -3,6 +3,7 @@ import SwiftUI
 /// The profile tab: how many looks you've tried and everything you've saved.
 struct ProfileView: View {
     let session: TryOnSession
+    @AppStorage("photoCountdownSeconds") private var photoCountdownSeconds = 3
 
     var body: some View {
         VStack(spacing: 0) {
@@ -11,6 +12,29 @@ struct ProfileView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
                     groupBox("Your style") {
+                        groupBox("Photo countdown") {
+                            Stepper(value: $photoCountdownSeconds, in: 0...10) {
+                                HStack {
+                                    Text("Before photo")
+                                        .font(Win95.font(14))
+
+                                    Spacer()
+
+                                    Text(photoCountdownSeconds == 0
+                                         ? "Off"
+                                         : "\(photoCountdownSeconds) sec")
+                                        .font(Win95.font(14, bold: true).monospacedDigit())
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 2)
+                                        .win95Sunken()
+                                }
+                                .foregroundStyle(Win95.text)
+                            }
+
+                            Text("Choose from 0 to 10 seconds.")
+                                .font(Win95.font(12))
+                                .foregroundStyle(Win95.secondaryText)
+                        }
                         statRow("Saved items", value: "\(session.closet.count)")
                         statRow("Looks in the deck", value: "\(session.outfits.count)")
                     }
