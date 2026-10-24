@@ -45,7 +45,6 @@ struct AITryOnModelTests {
 
     private func makeModel(
         productImage: UIImage?,
-        countdown: Int = 3,
         renderer: @escaping () throws -> TryOnRendering = { FakeRenderer() },
         recorder: PhaseRecorder? = nil
     ) -> AITryOnModel {
@@ -53,7 +52,6 @@ struct AITryOnModelTests {
         model = AITryOnModel(
             garment: hoodie,
             productImage: productImage,
-            countdownSeconds: countdown,
             makeRenderer: renderer,
             sleep: { _ in await MainActor.run { recorder?.record(model.phase) } }
         )
@@ -79,8 +77,8 @@ struct AITryOnModelTests {
 
     @Test func countsDownThenRendersTheCapturedPhoto() async {
         let recorder = PhaseRecorder()
-        let model = makeModel(productImage: product, countdown: 3, recorder: recorder)
-        model.startCountdown { self.selfie }
+        let model = makeModel(productImage: product, recorder: recorder)
+        model.startCountdown(seconds: 3) { self.selfie }
         await model.waitUntilFinished()
 
         #expect(recorder.phases == [.countdown(3), .countdown(2), .countdown(1)])
@@ -88,18 +86,50 @@ struct AITryOnModelTests {
         #expect(model.capturedPhoto === selfie)
     }
 
+    @Test func countsDownFromTheChosenSeconds() async {
+        let recorder = PhaseRecorder()
+        let model = makeModel(productImage: product, recorder: recorder)
+        model.startCountdown(seconds: 7) { self.selfie }
+        await model.waitUntilFinished()
+        #expect(recorder.phases == (1...7).reversed().map { .countdown($0) })
+        #expect(model.phase == .result(URL(string: "https://cdn.example.com/look.png")!))
+    }
+
+    @Test func zeroSecondsTakesThePhotoStraightAway() async {
+        let recorder = PhaseRecorder()
+        let model = makeModel(productImage: product, recorder: recorder)
+        var captured = false
+        model.startCountdown(seconds: 0) { captured = true; return self.selfie }
+        #expect(model.phase == .countdown(0))
+        #expect(model.canStartCountdown == false)
+        await model.waitUntilFinished()
+        #expect(recorder.phases.isEmpty)
+        #expect(captured)
+        #expect(model.phase == .result(URL(string: "https://cdn.example.com/look.png")!))
+    }
+
+    @Test(arguments: [(25, 10), (11, 10), (-3, 0)])
+    func keepsTheCountdownWithinTheProfileRange(requested: Int, expected: Int) async {
+        let recorder = PhaseRecorder()
+        let model = makeModel(productImage: product, recorder: recorder)
+        model.startCountdown(seconds: requested) { self.selfie }
+        await model.waitUntilFinished()
+        #expect(recorder.phases.count == expected)
+        #expect(recorder.phases.first == (expected > 0 ? .countdown(expected) : nil))
+    }
+
     @Test func ignoresTheShutterOnceStarted() async {
         let model = makeModel(productImage: product)
         var captures = 0
-        model.startCountdown { captures += 1; return self.selfie }
-        model.startCountdown { captures += 1; return self.selfie }
+        model.startCountdown(seconds: 3) { captures += 1; return self.selfie }
+        model.startCountdown(seconds: 3) { captures += 1; return self.selfie }
         await model.waitUntilFinished()
         #expect(captures == 1)
     }
 
     @Test func reportsACameraFailure() async {
         let model = makeModel(productImage: product)
-        model.startCountdown { throw CameraBroke() }
+        model.startCountdown(seconds: 3) { throw CameraBroke() }
         await model.waitUntilFinished()
         #expect(model.phase == .failed("Couldn't take the photo. Try again."))
     }
@@ -112,7 +142,7 @@ struct AITryOnModelTests {
             recorder: recorder
         )
         var captured = false
-        model.startCountdown { captured = true; return self.selfie }
+        model.startCountdown(seconds: 3) { captured = true; return self.selfie }
         await model.waitUntilFinished()
         #expect(recorder.phases.isEmpty)
         #expect(captured == false)
@@ -121,14 +151,14 @@ struct AITryOnModelTests {
 
     @Test func showsTheRenderErrorMessage() async {
         let model = makeModel(productImage: product, renderer: { FakeRenderer(result: .failure(.timedOut)) })
-        model.startCountdown { self.selfie }
+        model.startCountdown(seconds: 3) { self.selfie }
         await model.waitUntilFinished()
         #expect(model.phase == .failed("The render is taking too long. Try again."))
     }
 
     @Test func retakeGoesBackToTheCamera() async {
         let model = makeModel(productImage: product)
-        model.startCountdown { self.selfie }
+        model.startCountdown(seconds: 3) { self.selfie }
         await model.waitUntilFinished()
         model.retake()
         #expect(model.phase == .camera)
@@ -168,11 +198,10 @@ struct AITryOnModelTests {
         let model = AITryOnModel(
             look: AITryOnLook(title: "Court Kings", garments: [jeans, jersey]),
             productImages: [jersey.id: jerseyPhoto, jeans.id: jeansPhoto],
-            countdownSeconds: 1,
             makeRenderer: { renderer },
             sleep: { _ in }
         )
-        model.startCountdown { self.selfie }
+        model.startCountdown(seconds: 3) { self.selfie }
         await model.waitUntilFinished()
 
         #expect(model.phase == .result(URL(string: "https://cdn.example.com/step-2.png")!))
