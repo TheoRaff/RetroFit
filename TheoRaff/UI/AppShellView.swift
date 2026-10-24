@@ -124,7 +124,7 @@ private struct ClosetView: View {
                 }
             }
             .padding()
-            .background(Color(uiColor: .systemGroupedBackground))
+            .background(Color(red: 0.70, green: 0.69, blue: 0.67))
             .navigationTitle("Closet")
             .aiTryOnPrompt(for: $tryOnPrompt)
         }
@@ -193,7 +193,14 @@ private struct GarmentCard: View {
             }
         }
         .padding(10)
-        .background(.white, in: RoundedRectangle(cornerRadius: 18))
+        .background(
+            Color(red: 0.78, green: 0.77, blue: 0.75),
+            in: RoundedRectangle(cornerRadius: 4)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 4)
+                .stroke(Color.gray.opacity(0.8), lineWidth: 1)
+        )
     }
 
     private var categoryName: String {

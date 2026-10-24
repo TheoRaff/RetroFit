@@ -43,7 +43,14 @@ struct OutfitCard: View {
             arrowButton(systemImage: "chevron.right", label: "Next outfit", enabled: canGoForward, action: onForward)
         }
         .padding(12)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .background(
+            Color(red: 0.78, green: 0.77, blue: 0.75),
+            in: RoundedRectangle(cornerRadius: 4)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 4)
+                .stroke(Color.gray.opacity(0.8), lineWidth: 1)
+        )
     }
 
     private func arrowButton(systemImage: String, label: String, enabled: Bool, action: @escaping () -> Void) -> some View {
