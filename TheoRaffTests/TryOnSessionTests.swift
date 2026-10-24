@@ -221,4 +221,14 @@ struct TryOnSessionTests {
         session.clearFittingRoom()
         #expect(session.fittingRoom.isEmpty)
     }
+
+    @Test func fittingRoomTakesAccessoriesAlongsideClothes() throws {
+        let session = TryOnSession()
+        let jersey = try Fixtures.garment(id: "jersey", category: .top)
+        let shades = try Fixtures.garment(id: "shades", category: .eyewear)
+        let cap = try Fixtures.garment(id: "cap", category: .headwear)
+        let trainers = try Fixtures.garment(id: "trainers", category: .shoes)
+        [jersey, shades, cap, trainers].forEach(session.addToFittingRoom)
+        #expect(session.fittingRoom == [jersey, shades, cap, trainers])
+    }
 }

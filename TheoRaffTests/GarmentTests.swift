@@ -50,6 +50,7 @@ struct GarmentTests {
         (.top, .bodyCutout),
         (.bottom, .renderOnly),
         (.fullLook, .renderOnly),
+        (.shoes, .renderOnly),
     ])
     func categoryDecidesLiveStyle(category: GarmentCategory, style: LiveStyle) {
         #expect(category.liveStyle == style)
