@@ -73,4 +73,26 @@ struct BundledCatalogTests {
         #expect(GarmentCanvas.leftShoulder.y == GarmentCanvas.rightShoulder.y)
         #expect(middle == GarmentCanvas.size.width / 2)
     }
+
+    /// The script can't import the app, so it keeps its own copy of the canvas numbers.
+    /// Runs in the simulator, where the repo is readable; skipped on a phone.
+    @Test(.enabled(if: FileManager.default.fileExists(atPath: BundledCatalogTests.prepScriptPath)))
+    func prepScriptUsesTheSameCanvas() throws {
+        let script = try String(contentsOfFile: Self.prepScriptPath, encoding: .utf8)
+        let canvas = [
+            "static let width = \(Int(GarmentCanvas.size.width))",
+            "static let height = \(Int(GarmentCanvas.size.height))",
+            "static let leftShoulder = CGPoint(x: \(Int(GarmentCanvas.leftShoulder.x)), y: \(Int(GarmentCanvas.leftShoulder.y)))",
+            "static let rightShoulder = CGPoint(x: \(Int(GarmentCanvas.rightShoulder.x)), y: \(Int(GarmentCanvas.rightShoulder.y)))",
+        ]
+        for line in canvas {
+            #expect(script.contains(line), "tools/prep-garment.swift doesn't have \(line)")
+        }
+    }
+
+    static let prepScriptPath = URL(fileURLWithPath: #filePath)
+        .deletingLastPathComponent()
+        .deletingLastPathComponent()
+        .appendingPathComponent("tools/prep-garment.swift")
+        .path
 }

@@ -3,14 +3,15 @@
 //
 //   xcrun swift tools/prep-garment.swift <photo> <garment-id> [options]
 //
-//   --top                 Place the garment by its shoulder seams (tops). Others are centred.
-//   --shoulders L,T,R,B   Shoulder seam pixels in the photo: left x,y then right x,y, measured
-//                         from the top-left as Preview shows them. Tops only. Guessed if left out.
-//   --keep-background     The photo is already a transparent cutout. Skips background removal.
-//   --clear-above Y       Erases everything above pixel row Y, such as a hanger hook.
-//   --grid <png>          Also writes the cutout with a 100 px grid, for reading off shoulder pixels.
-//   --preview <png>       Also writes the canvas with the shoulder targets marked.
-//   --assets <dir>        Asset catalog to write into. Default: TheoRaff/Resources/Assets.xcassets
+//   --top                    Place the garment by its shoulder seams (tops). Others are centred.
+//   --shoulders LX,LY,RX,RY  Shoulder seam pixels in the photo: left x,y then right x,y, measured
+//                            from the top-left as Preview shows them. Needs --top. Guessed if left out.
+//   --keep-background        The photo is already a transparent cutout. Skips background removal.
+//   --clear-above Y          Erases everything above pixel row Y, such as a hanger hook.
+//   --grid <png>             Also writes the cutout with a 100 px grid, for reading off shoulder pixels.
+//   --preview <png>          Also writes the canvas with the shoulder targets marked.
+//   --force                  Saves even when the garment runs off the canvas, cropping it.
+//   --assets <dir>           Asset catalog to write into. Default: TheoRaff/Resources/Assets.xcassets
 //
 // Every canvas is 768 x 960 px. Tops have the left shoulder seam at (234, 320) and the
 // right one at (534, 320), so a body overlay can pin those two points to the wearer's shoulders.
@@ -45,11 +46,12 @@ struct Options {
     var clearAbove: Int?
     var gridURL: URL?
     var previewURL: URL?
+    var force = false
     var assets = URL(fileURLWithPath: "TheoRaff/Resources/Assets.xcassets")
 
     init(arguments: [String]) throws {
         guard arguments.count >= 2, !arguments[0].hasPrefix("--"), !arguments[1].hasPrefix("--") else {
-            throw Failure("Usage: xcrun swift tools/prep-garment.swift <photo> <garment-id> [--top] [--shoulders L,T,R,B] [--keep-background] [--clear-above Y] [--grid out.png] [--preview out.png] [--assets dir]")
+            throw Failure("Usage: xcrun swift tools/prep-garment.swift <photo> <garment-id> [--top] [--shoulders LX,LY,RX,RY] [--keep-background] [--clear-above Y] [--grid out.png] [--preview out.png] [--force] [--assets dir]")
         }
         photo = URL(fileURLWithPath: arguments[0])
         garmentID = arguments[1]
@@ -73,16 +75,22 @@ struct Options {
             case "--shoulders": shoulders = try Self.parseShoulders(value(for: flag))
             case "--grid": gridURL = URL(fileURLWithPath: try value(for: flag))
             case "--preview": previewURL = URL(fileURLWithPath: try value(for: flag))
+            case "--force": force = true
             case "--assets": assets = URL(fileURLWithPath: try value(for: flag))
             default: throw Failure("Unknown option \(flag)")
             }
             index += 1
         }
+        if shoulders != nil && !isTop {
+            throw Failure("--shoulders only places tops. Add --top, or drop --shoulders to centre the garment.")
+        }
     }
 
     private static func parseShoulders(_ text: String) throws -> (left: CGPoint, right: CGPoint) {
         let numbers = text.split(separator: ",").compactMap { Double($0.trimmingCharacters(in: .whitespaces)) }
-        guard numbers.count == 4 else { throw Failure("--shoulders takes four numbers: leftX,leftY,rightX,rightY") }
+        guard numbers.count == 4, numbers.allSatisfy(\.isFinite) else {
+            throw Failure("--shoulders takes four numbers: leftX,leftY,rightX,rightY")
+        }
         let left = CGPoint(x: numbers[0], y: numbers[1])
         let right = CGPoint(x: numbers[2], y: numbers[3])
         guard right.x > left.x else { throw Failure("The right shoulder must be to the right of the left one") }
@@ -295,15 +303,17 @@ func writePNG(_ image: CGImage, to url: URL) throws {
 }
 
 /// Saves the canvas as <assets>/<id>.imageset, replacing any earlier image for that garment.
+/// The new imageset is built in a temporary folder first, so a failed write keeps the old one.
 func saveToAssetCatalog(_ image: CGImage, id: String, assets: URL) throws -> URL {
-    guard FileManager.default.fileExists(atPath: assets.appendingPathComponent("Contents.json").path) else {
+    let files = FileManager.default
+    guard files.fileExists(atPath: assets.appendingPathComponent("Contents.json").path) else {
         throw Failure("\(assets.path) isn't an asset catalog. Run from the repo root or pass --assets.")
     }
     let imageSet = assets.appendingPathComponent("\(id).imageset")
-    if FileManager.default.fileExists(atPath: imageSet.path) {
-        try FileManager.default.removeItem(at: imageSet)
-    }
-    try writePNG(image, to: imageSet.appendingPathComponent("\(id).png"))
+    let staging = try files.url(for: .itemReplacementDirectory, in: .userDomainMask, appropriateFor: assets, create: true)
+    defer { try? files.removeItem(at: staging) }
+    let staged = staging.appendingPathComponent("\(id).imageset")
+    try writePNG(image, to: staged.appendingPathComponent("\(id).png"))
     let contents = """
     {
       "images" : [
@@ -319,11 +329,25 @@ func saveToAssetCatalog(_ image: CGImage, id: String, assets: URL) throws -> URL
     }
 
     """
-    try contents.write(to: imageSet.appendingPathComponent("Contents.json"), atomically: true, encoding: .utf8)
+    try contents.write(to: staged.appendingPathComponent("Contents.json"), atomically: true, encoding: .utf8)
+    if files.fileExists(atPath: imageSet.path) {
+        _ = try files.replaceItemAt(imageSet, withItemAt: staged)
+    } else {
+        try files.moveItem(at: staged, to: imageSet)
+    }
     return imageSet
 }
 
 // MARK: Main
+
+/// The guess, unless it's too narrow to be shoulders, as with a hanger hook or a halter strap.
+func guessedShoulders(from alpha: AlphaMap, in bounds: CGRect) throws -> (left: CGPoint, right: CGPoint)? {
+    guard let guess = alpha.guessShoulders(in: bounds) else { return nil }
+    guard guess.right.x - guess.left.x >= bounds.width * 0.25 else {
+        throw Failure("The shoulder guess is only \(Int(guess.right.x - guess.left.x)) px wide. Pass --shoulders, reading them off --grid.")
+    }
+    return guess
+}
 
 func run() throws {
     let options = try Options(arguments: Array(CommandLine.arguments.dropFirst()))
@@ -341,17 +365,24 @@ func run() throws {
 
     var shoulders: (left: CGPoint, right: CGPoint)?
     if options.isTop {
-        shoulders = options.shoulders ?? alpha.guessShoulders(in: bounds)
+        shoulders = try options.shoulders ?? guessedShoulders(from: alpha, in: bounds)
         guard let shoulders else { throw Failure("Couldn't guess the shoulders. Pass --shoulders.") }
         let source = options.shoulders == nil ? "guessed" : "given"
         print("Shoulders (\(source)): left \(Int(shoulders.left.x)),\(Int(shoulders.left.y)) right \(Int(shoulders.right.x)),\(Int(shoulders.right.y))")
     }
 
     let transform = placement(for: bounds, shoulders: shoulders)
+    guard [transform.a, transform.b, transform.c, transform.d, transform.tx, transform.ty].allSatisfy(\.isFinite) else {
+        throw Failure("Couldn't place the garment. Check the shoulder points.")
+    }
     let placed = bounds.applying(transform)
     let canvasRect = CGRect(x: 0, y: 0, width: Canvas.width, height: Canvas.height)
     if !canvasRect.contains(placed.insetBy(dx: 1, dy: 1)) {
-        print("Warning: the garment runs off the canvas (it lands at \(placed.integral)). Check the shoulder points.")
+        let problem = "The garment runs off the canvas (it lands at \(placed.integral))."
+        guard options.force else {
+            throw Failure("\(problem) Check the shoulder points, or pass --force to crop it.")
+        }
+        print("Warning: \(problem) Cropping it because of --force.")
     }
     let canvas = try render(cutout, with: transform)
 
