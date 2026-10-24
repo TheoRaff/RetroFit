@@ -14,6 +14,8 @@ struct ContentView: View {
     @State private var showFlash = false
     @State private var toast: String?
     @State private var savedPhotos = 0
+    
+    @AppStorage("photoCountdownSeconds") private var photoCountdownSeconds = 3
 
     /// How far a drag has to travel sideways to count as a swipe.
     private let swipeDistance: CGFloat = 60
@@ -143,17 +145,33 @@ struct ContentView: View {
     private func capturePhoto() {
         guard !isCapturing else { return }
         isCapturing = true
+
         Task {
             defer { isCapturing = false }
+
+            if photoCountdownSeconds > 0 {
+                for secondsRemaining in stride(
+                    from: photoCountdownSeconds,
+                    through: 1,
+                    by: -1
+                ) {
+                    showToast("Photo in \(secondsRemaining)…")
+                    try? await Task.sleep(for: .seconds(1))
+                }
+            }
+
             guard let image = await snapshotter.capture() else {
                 showToast("Couldn't take the photo. Try again.")
                 return
             }
+
             await flash()
             let result = await photoSaver.save(image)
+
             if result == .saved {
                 savedPhotos += 1
             }
+
             showToast(result.message)
         }
     }
