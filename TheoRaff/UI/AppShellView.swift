@@ -120,7 +120,7 @@ private struct ClosetView: View {
                 }
             }
             .padding()
-            .background(Color(red: 0.70, green: 0.69, blue: 0.67))
+            .background(Color(red: 0.64, green: 0.59, blue: 0.53))
             .navigationTitle("Closet")
             .aiTryOnPrompt(for: $tryOnPrompt)
         }
@@ -145,7 +145,7 @@ private struct GarmentCard: View {
             ZStack {
                 RoundedRectangle(cornerRadius: 12)
                     .fill(Color.white)
-
+                
                 if let image = UIImage(named: garment.imageName) {
                     Image(uiImage: image)
                         .resizable()
@@ -158,18 +158,18 @@ private struct GarmentCard: View {
                 }
             }
             .frame(height: 145)
-
+            
             HStack(alignment: .top, spacing: 6) {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(garment.name)
                         .font(.headline)
                         .lineLimit(2)
-
+                    
                     Text(categoryName)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-
+                
                 Spacer(minLength: 0)
 
                 FindItMenu(garment: garment) {
@@ -195,12 +195,15 @@ private struct GarmentCard: View {
         }
         .padding(10)
         .background(
-            Color(red: 0.78, green: 0.77, blue: 0.75),
+            Color(red: 0.75, green: 0.69, blue: 0.61),
             in: RoundedRectangle(cornerRadius: 4)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 4)
-                .stroke(Color.gray.opacity(0.8), lineWidth: 1)
+                .stroke(
+                    Color(red: 0.40, green: 0.33, blue: 0.27).opacity(0.8),
+                    lineWidth: 1
+                )
         )
     }
 

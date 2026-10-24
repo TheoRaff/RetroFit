@@ -135,7 +135,7 @@ struct ARViewContainer: UIViewRepresentable {
             glassesEntity.position = SIMD3<Float>(
                 eyeMidpoint.x - glassesBoundsCenter.x * scale,
                 eyeMidpoint.y - glassesBoundsCenter.y * scale,
-                eyeMidpoint.z - glassesBoundsCenter.z * scale + 0.02
+                eyeMidpoint.z - glassesBoundsCenter.z * scale - 0.035
             )
         }
     }
