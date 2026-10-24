@@ -219,6 +219,7 @@ struct ARViewContainer: UIViewRepresentable {
                 eyeMidpoint.x - glasses.boundsCenter.x * scale,
                 eyeMidpoint.y - glasses.boundsCenter.y * scale,
                 eyeMidpoint.z - glasses.boundsCenter.z * scale - 0.035
+                    + (glasses.name == "Y2K_glasses" ? 0.02 : 0)
             )
         }
 
