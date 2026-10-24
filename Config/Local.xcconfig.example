@@ -1,0 +1,9 @@
+// Copy this file to Config/Local.xcconfig and fill in your own values.
+// Local.xcconfig is gitignored, so each laptop keeps its own copy.
+
+// Your team ID: Xcode > Settings > Accounts > your Apple ID > Personal Team.
+// It is the 10-character code, for example ABCDE12345.
+DEVELOPMENT_TEAM = YOUR_TEAM_ID
+
+// Makes your bundle ID unique, for example .raff or .theo
+BUNDLE_ID_SUFFIX = .yourname
