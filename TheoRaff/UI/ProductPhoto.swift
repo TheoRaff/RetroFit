@@ -13,13 +13,18 @@ enum ProductPhoto {
     /// The trimmed photo if it's ready, otherwise the asset catalog photo as it is.
     /// Nil when there's no such photo.
     static func named(_ name: String) -> UIImage? {
-        cache.trimmedByName[name] ?? UIImage(named: name)
+        cache.trimmedByName[name] ?? original(named: name)
+    }
+
+    /// AI rendering uses the whole product canvas, including personally imported clothes.
+    static func original(named name: String) -> UIImage? {
+        ImportedGarmentStore.shared.photo(named: name) ?? UIImage(named: name)
     }
 
     /// Trims each photo once, in order, in the background.
     static func preload(_ names: [String]) async {
         for name in names where cache.trimmedByName[name] == nil {
-            guard let photo = UIImage(named: name) else { continue }
+            guard let photo = original(named: name) else { continue }
             let trimmed = await Task.detached(priority: .userInitiated) {
                 ImageTrimmer.trimmed(photo)
             }.value

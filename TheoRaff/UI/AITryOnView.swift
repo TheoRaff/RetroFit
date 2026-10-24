@@ -16,7 +16,7 @@ struct AITryOnView: View {
 
     init(look: AITryOnLook) {
         let photos = look.garments.reduce(into: [String: UIImage]()) { photos, garment in
-            photos[garment.id] = UIImage(named: garment.imageName)
+            photos[garment.id] = ProductPhoto.original(named: garment.imageName)
         }
         _model = State(initialValue: AITryOnModel(
             look: look,
