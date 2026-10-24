@@ -111,7 +111,12 @@ struct AITryOnView: View {
                         Task { await saveResult(from: url) }
                     }
                 }
-                pillButton("Done", systemImage: "checkmark") { dismiss() }
+                HStack(spacing: 12) {
+                    FindItMenu(garment: model.garment) {
+                        pillLabel("Find it", systemImage: "bag")
+                    }
+                    pillButton("Done", systemImage: "checkmark") { dismiss() }
+                }
             }
         case .failed(let message):
             VStack(spacing: 12) {
@@ -172,14 +177,18 @@ struct AITryOnView: View {
 
     private func pillButton(_ title: String, systemImage: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Label(title, systemImage: systemImage)
-                .font(.headline)
-                .padding(.horizontal, 18)
-                .padding(.vertical, 12)
-                .background(.ultraThinMaterial, in: Capsule())
+            pillLabel(title, systemImage: systemImage)
         }
         .buttonStyle(.plain)
-        .foregroundStyle(.white)
+    }
+
+    private func pillLabel(_ title: String, systemImage: String) -> some View {
+        Label(title, systemImage: systemImage)
+            .font(.headline)
+            .foregroundStyle(.white)
+            .padding(.horizontal, 18)
+            .padding(.vertical, 12)
+            .background(.ultraThinMaterial, in: Capsule())
     }
 
     private func messageText(_ text: String) -> some View {

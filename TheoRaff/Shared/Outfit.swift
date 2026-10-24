@@ -20,10 +20,10 @@ struct Outfit: Identifiable, Hashable, Codable, Sendable {
         if garments.isEmpty {
             throw OutfitError.noGarments(outfitID: cleanID)
         }
-        if let repeated = Self.firstRepeat(in: garments.map(\.category)) {
+        if let repeated = Validation.firstRepeat(in: garments.map(\.category)) {
             throw OutfitError.duplicateCategory(repeated, outfitID: cleanID)
         }
-        if let repeated = Self.firstRepeat(in: garments.map(\.id)) {
+        if let repeated = Validation.firstRepeat(in: garments.map(\.id)) {
             throw OutfitError.duplicateGarmentID(repeated, outfitID: cleanID)
         }
         self.id = cleanID
@@ -54,10 +54,5 @@ struct Outfit: Identifiable, Hashable, Codable, Sendable {
         } catch let error as OutfitError {
             throw Validation.decodingError(error, kind: "Outfit", id: id, at: decoder.codingPath)
         }
-    }
-
-    private static func firstRepeat<T: Hashable>(in values: [T]) -> T? {
-        var seen = Set<T>()
-        return values.first { !seen.insert($0).inserted }
     }
 }

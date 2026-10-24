@@ -114,6 +114,12 @@ enum Validation {
         return trimmed
     }
 
+    /// The first value that appears more than once, if any.
+    static func firstRepeat<T: Hashable>(in values: [T]) -> T? {
+        var seen = Set<T>()
+        return values.first { !seen.insert($0).inserted }
+    }
+
     static func decodingError(_ error: Error, kind: String, id: String, at path: [CodingKey]) -> DecodingError {
         DecodingError.dataCorrupted(DecodingError.Context(
             codingPath: path,
