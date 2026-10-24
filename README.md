@@ -7,7 +7,24 @@ Our hackathon project.
 1. Clone the repo, then open `TheoRaff.xcodeproj` (Xcode 16 or newer).
 2. Pick an iPhone simulator and press Run (⌘R).
 3. Add new Swift files inside the `TheoRaff` folder. Xcode picks them up automatically, so the project file rarely changes.
-4. To run on your own iPhone, choose your Personal Team under Signing & Capabilities, but don't commit that change.
+
+### Folders
+
+Each folder has one owner, which keeps project-file conflicts away.
+
+- `TheoRaff/Tracking`: Person A. ARKit, Vision body pose, overlays.
+- `TheoRaff/UI`: Person B. Screens and the chrome design system.
+- `TheoRaff/Services`: Person B. Catalog and AI render calls.
+- `TheoRaff/Resources`: shared. Assets, cutouts, models, fonts.
+
+### Run on your iPhone
+
+Two free Apple IDs can't share one bundle ID, so each person signs with their own settings.
+
+1. Copy `Config/Local.xcconfig.example` to `Config/Local.xcconfig`. Git ignores this file.
+2. Set `DEVELOPMENT_TEAM` to your Personal Team ID from Xcode > Settings > Accounts.
+3. Set `BUNDLE_ID_SUFFIX` to something unique, such as `.raff` or `.theo`.
+4. Don't pick a team in Xcode's Signing & Capabilities tab. That writes your team into the shared project file.
 
 ## Project notes
 
