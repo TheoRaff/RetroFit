@@ -28,6 +28,45 @@
       "tags": ["y2k", "edgy", "mcbling"]
     },
     {
+      "id": "ice-blue-rimless-shades",
+      "name": "Ice Blue Rimless",
+      "category": "eyewear",
+      "imageName": "ice-blue-rimless-shades",
+      "modelName": "Y2K_Ice_Blue_Rimless",
+      "searchQuery": "y2k ice blue rimless rectangle sunglasses",
+      "tags": [
+        "y2k",
+        "cyber",
+        "mcbling"
+      ]
+    },
+    {
+      "id": "candy-pink-oval-shades",
+      "name": "Candy Pink Ovals",
+      "category": "eyewear",
+      "imageName": "candy-pink-oval-shades",
+      "modelName": "Y2K_Candy_Pink_Oval",
+      "searchQuery": "y2k candy pink oval sunglasses",
+      "tags": [
+        "y2k",
+        "mcbling",
+        "pop"
+      ]
+    },
+    {
+      "id": "amber-wrap-shades",
+      "name": "Amber Wrap Shades",
+      "category": "eyewear",
+      "imageName": "amber-wrap-shades",
+      "modelName": "Y2K_Amber_Wrap",
+      "searchQuery": "y2k amber brown wraparound sunglasses",
+      "tags": [
+        "y2k",
+        "sporty",
+        "rave"
+      ]
+    },
+    {
       "id": "pink-leopard-bucket-hat",
       "name": "Pink Leopard Bucket Hat",
       "category": "headwear",

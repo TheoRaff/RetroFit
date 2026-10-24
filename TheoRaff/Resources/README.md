@@ -41,3 +41,11 @@ Every hat is built around the same reference head so the AR view can wear it wit
 `ARViewContainer` moves the hat to the wearer's eye midpoint, scales it by their eye distance (`HatFit`), and puts an invisible head-shaped occluder inside it so the far side of the brim hides behind the head. `HatFitTests` loads every headwear model and checks it follows this layout.
 
 To export from Blender: select one hat, then File → Export → USD with `.usdz` as the extension, Convert Orientation on (forward −Z, up Y), Triangulate on, and Export Lights and Cameras off. A new hat needs the same origin and scale: put it on `RefHead` and export it in place.
+
+## Original Y2K eyewear
+
+Ice Blue Rimless, Candy Pink Ovals and Amber Wrap Shades are original RetroFit models, made procedurally in Blender with no third-party geometry, textures or branding. Each has its own three-quarter product photo and a compact USDZ (under 100 KB). They appear in Closet and automatically join the live Try On deck through `Catalog.liveLooks`.
+
+The source is `art/y2k_eyewear.blend`, with one scene per style. Rebuild it with Blender's `--python tools/build-eyewear.py` (or run that file in Blender's scripting workspace). The script uses copies of the hat product-shot rig, writes previews to `build/eyewear-previews`, exports selected meshes only, and restores the existing scene without saving it. Re-run `prep-garment.swift <preview> <id> --keep-background` for each preview.
+
+The exports use metres, +y up and +z forward, with lenses in front and temples extending towards -z. They use the existing glasses bounds-based fit without model-specific offsets. `EyewearAssetTests` loads the actual bundled files through `FaceModelLibrary`, checks their dimensions, and verifies lens positions after the current AR fitting transform.
