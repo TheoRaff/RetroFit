@@ -30,7 +30,7 @@ struct Catalog: Equatable, Sendable {
     /// Outfits from the file, in file order.
     let outfits: [Outfit]
     /// The Try On deck: one look per garment the camera can put on you live (glasses and
-    /// hats), in file order. Clothes can't be shown live, so they're tried on with AI from the closet.
+    /// headwear), in file order. Clothes can't be shown live, so they're tried on with AI from the closet.
     let liveLooks: [Outfit]
 
     /// The catalog that ships in the app, loaded once. Empty, with the error logged,

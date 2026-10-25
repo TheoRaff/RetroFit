@@ -67,19 +67,23 @@ struct AccessoryAssetTests {
         }
     }
 
-    /// The wings and the visor brim are tinted see-through plastic. Blender's USD export drops
-    /// alpha, so the opacity is written in afterwards and has to survive into RealityKit.
-    @Test(arguments: ["Y2K_Butterfly_Clips", "Y2K_Tinted_Visor"])
-    func translucentPartsStaySeeThrough(name: String) async throws {
+    /// The wings (one material per colour) and the visor brim are tinted see-through plastic.
+    /// Blender's USD export drops alpha, so the opacity is written in afterwards and has to
+    /// survive into RealityKit, which reads it into the base colour's alpha. Each see-through
+    /// sheet is stored once per side, so it has to cull back faces, or both copies draw and
+    /// the tint doubles.
+    @Test(arguments: [("Y2K_Butterfly_Clips", 3), ("Y2K_Tinted_Visor", 1)])
+    func translucentPartsStaySeeThrough(name: String, sheets: Int) async throws {
         let entity = try #require(await FaceModelLibrary().load(name))
-        let materials = ([entity] + descendants(of: entity))
+        let seeThrough = ([entity] + descendants(of: entity))
             .flatMap { $0.components[ModelComponent.self]?.materials ?? [] }
             .compactMap { $0 as? PhysicallyBasedMaterial }
-        let seeThrough = materials.contains { material in
-            if case .transparent = material.blending { return true }
-            return false
-        }
-        #expect(seeThrough, "\(name) lost its translucent material")
+            .filter { material in
+                guard case .transparent = material.blending else { return false }
+                return material.baseColor.tint.cgColor.alpha < 1
+            }
+        #expect(seeThrough.count == sheets, "\(name) has \(seeThrough.count) see-through materials, not \(sheets)")
+        #expect(seeThrough.allSatisfy { $0.faceCulling == .back }, "\(name) draws both sides of its see-through sheets")
     }
 
     @Test func accessoriesAreInTheClosetAndLiveDeck() throws {
