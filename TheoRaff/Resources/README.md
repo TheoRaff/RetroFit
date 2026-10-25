@@ -50,9 +50,15 @@ The source is `art/y2k_eyewear.blend`, with one scene per style. Rebuild it with
 
 The exports use metres, +y up and +z forward, with lenses in front and temples extending towards -z. They use the existing glasses bounds-based fit without model-specific offsets. `EyewearAssetTests` loads the actual bundled files through `FaceModelLibrary`, checks their dimensions, and verifies lens positions after the current AR fitting transform.
 
+The lenses are tinted see-through plastic, like the accessories below. The script exports to a temporary `.usdc`, copies each material's Alpha into the USD opacity (Blender writes every material as opaque), then packages the USDZ. Each lens is one curved sheet stored once facing out and once facing the eyes. RealityKit culls the back faces of every USD material, and the export marks the see-through meshes `doubleSided = 0` so SceneKit does too. So only one copy draws: no streaks from two layers sorting, and no doubled tint. Cycles can't cull back faces, so the previews render only the outward copy. `EyewearAssetTests` checks every lens loads as a see-through tint and that each lens triangle has a twin facing the other way.
+
 ### Violet Butterfly Shades
 
-`Y2K_Violet_Butterfly.usdz` adds an original swept butterfly frame with polished silver rims, ten small crystal accents and violet gradient lenses. Its gradient texture is embedded in the USDZ; the 151 KB file has 9,852 triangles. The editable source is `art/y2k_violet_butterfly.blend`, with the image packed in. Its own Blender render is `violet-butterfly-shades.imageset`, prepared on the shared 768 x 960 canvas.
+`Y2K_Violet_Butterfly.usdz` adds an original swept butterfly frame with polished silver rims, ten small crystal accents and violet gradient lenses. Its gradient texture is embedded in the USDZ; the 161 KB file has 9,564 triangles. The editable source is `art/y2k_violet_butterfly.blend`, with the image packed in. Its own Blender render is `violet-butterfly-shades.imageset`, prepared on the shared 768 x 960 canvas.
+
+It has no build script, so `tools/patch-violet-butterfly.py` makes the shipped USDZ's lenses see-through in place. It copies the source's Alpha values into the USD opacity and turns each lens's closed shell into a two-way sheet like the other eyewear. Run it again after any new export from the source:
+
+    /Applications/Blender.app/Contents/MacOS/Blender -b art/y2k_violet_butterfly.blend --python tools/patch-violet-butterfly.py
 
 The model uses the same coordinates and bounds-based glasses fit as the other eyewear. `EyewearAssetTests` checks its loading, dimensions, fitted lens positions, catalog/deck entry and embedded gradient material.
 
