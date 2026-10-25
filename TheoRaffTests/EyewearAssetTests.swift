@@ -51,6 +51,28 @@ struct EyewearAssetTests {
         #expect(materials.contains { $0.baseColor.texture != nil }, "The violet gradient must load from inside the USDZ")
     }
 
+    /// The lenses are tinted see-through plastic. Blender's USD export drops alpha, so the
+    /// opacity is written in afterwards and has to survive into RealityKit, which reads it into
+    /// the base colour's alpha. Each lens is one sheet stored once per side, so it has to cull
+    /// back faces, or both copies draw and the tint doubles.
+    @Test(arguments: models)
+    func lensesStaySeeThrough(name: String) async throws {
+        let entity = try #require(await FaceModelLibrary().load(name))
+        let materials = descendants(of: entity)
+            .filter { $0.name.contains("Lens") }
+            .flatMap { $0.components[ModelComponent.self]?.materials ?? [] }
+        #expect(materials.count == 2, "\(name) has \(materials.count) lens materials, not one per lens")
+        for material in materials {
+            let lens = try #require(material as? PhysicallyBasedMaterial, "\(name) lens isn't physically based")
+            guard case .transparent = lens.blending else {
+                Issue.record("\(name) lens is opaque")
+                continue
+            }
+            #expect(lens.baseColor.tint.cgColor.alpha < 1, "\(name) lens has no opacity in its base colour")
+            #expect(lens.faceCulling == .back, "\(name) draws both sides of its lenses")
+        }
+    }
+
     private func descendants(of entity: Entity) -> [Entity] {
         entity.children.flatMap { [$0] + descendants(of: $0) }
     }
