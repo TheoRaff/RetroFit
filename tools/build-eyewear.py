@@ -1,7 +1,7 @@
 """Original RetroFit eyewear. Run inside Blender; preserves the user's open scene.
 AR coordinates: metres, +X right, +Y up, +Z towards the camera.
 """
-import bpy, bmesh, math, json, tempfile
+import bpy, bmesh, math, json, shutil, tempfile
 from pathlib import Path
 from mathutils import Vector
 from pxr import Sdf, Tf, Usd, UsdShade, UsdUtils
@@ -171,11 +171,13 @@ try:
         scene['design_note']='Original RetroFit procedural eyewear; no third-party geometry or textures.'
         scene['ar_convention']='metres; +Y up, +Z forward in exported USD; compatible with bounds-based glasses fitting'
         out=REPO/'TheoRaff/Resources'/f"{spec['model']}.usdz"
-        layer=Path(tempfile.mkdtemp(prefix='y2k_usd_'))/f"{spec['model']}.usdc"
-        bpy.ops.wm.usd_export(filepath=str(layer),selected_objects_only=True,export_materials=True,export_lights=False,export_cameras=False,convert_orientation=True,export_global_forward_selection='NEGATIVE_Z',export_global_up_selection='Y',triangulate_meshes=True)
-        add_opacity(layer,[frame,lens,chrome,pad])
-        out.unlink(missing_ok=True)
-        if not UsdUtils.CreateNewUsdzPackage(str(layer),str(out)):raise RuntimeError(f'Could not package {out}')
+        with tempfile.TemporaryDirectory(prefix='y2k_usd_') as work:
+            layer=Path(work)/f"{spec['model']}.usdc";packaged=layer.with_suffix('.usdz')
+            bpy.ops.wm.usd_export(filepath=str(layer),selected_objects_only=True,export_materials=True,export_lights=False,export_cameras=False,convert_orientation=True,export_global_forward_selection='NEGATIVE_Z',export_global_up_selection='Y',triangulate_meshes=True)
+            add_opacity(layer,[frame,lens,chrome,pad])
+            # Package beside the layer, so a failure never leaves the app without the model.
+            if not UsdUtils.CreateNewUsdzPackage(str(layer),str(packaged)):raise RuntimeError(f'Could not package {out}')
+            shutil.move(packaged,out)
         triangles=sum(sum(len(p.vertices)-2 for p in o.data.polygons) for o in models)
         # Use independent copies of the established product-shot rig.
         for name,src in rig.items():

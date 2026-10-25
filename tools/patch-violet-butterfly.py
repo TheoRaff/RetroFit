@@ -6,7 +6,7 @@ The model has no build script, so this edits the shipped USDZ in place and leave
 texture alone. Blender's USD export writes every material as opaque: each material whose Principled
 BSDF Alpha is below 1 gets that opacity back, and its meshes cull back faces. Each lens was a closed
 thin shell, whose two see-through layers sort into streaks in the app; it becomes its front fan,
-stored once facing out and once facing the eyes. Safe to run again.
+stored once facing out and once facing the eyes. On a model that's already patched it changes nothing.
 """
 import shutil, tempfile, zipfile
 from collections import Counter
@@ -74,6 +74,7 @@ def front_sheet(mesh):
     sheet = Vt.Vec3fArray([points[v] for v in keep] * 2)
     mesh.GetPointsAttr().Set(sheet)
     mesh.GetNormalsAttr().Set(Vt.Vec3fArray(normals + [-n for n in normals]))
+    mesh.SetNormalsInterpolation(UsdGeom.Tokens.vertex)
     mesh.GetFaceVertexCountsAttr().Set(Vt.IntArray([3] * (len(faces) // 3)))
     mesh.GetFaceVertexIndicesAttr().Set(Vt.IntArray(faces))
     st.SetIndices(Vt.IntArray(uvs))
@@ -82,35 +83,47 @@ def front_sheet(mesh):
 
 
 def patch(layer, alphas):
+    """Patches the layer, saving it only if anything changed, and reports what it did."""
     stage = Usd.Stage.Open(str(layer))
-    report = {'opacity': {}, 'sheets': []}
+    report = {'opacity': {}, 'sheets': [], 'changed': False}
     for prim in stage.Traverse():
         if prim.IsA(UsdShade.Material) and prim.GetName() in alphas:
+            alpha = float(alphas[prim.GetName()])
             for child in prim.GetChildren():
                 shader = UsdShade.Shader(child)
                 if shader and shader.GetIdAttr().Get() == 'UsdPreviewSurface':
-                    shader.CreateInput('opacity', Sdf.ValueTypeNames.Float).Set(float(alphas[prim.GetName()]))
-                    report['opacity'][prim.GetName()] = round(alphas[prim.GetName()], 3)
+                    opacity = shader.GetInput('opacity')
+                    current = opacity.Get() if opacity else None
+                    if current is None or abs(current - alpha) > 1e-6:
+                        shader.CreateInput('opacity', Sdf.ValueTypeNames.Float).Set(alpha)
+                        report['changed'] = True
+                    report['opacity'][prim.GetName()] = round(alpha, 3)
         elif prim.IsA(UsdGeom.Mesh):
+            mesh = UsdGeom.Mesh(prim)
             bound = UsdShade.MaterialBindingAPI(prim).GetDirectBinding().GetMaterialPath()
-            if bound.name in alphas:
-                UsdGeom.Mesh(prim).GetDoubleSidedAttr().Set(False)
-            if prim.GetName() in LENSES and front_sheet(UsdGeom.Mesh(prim)):
+            if bound.name in alphas and mesh.GetDoubleSidedAttr().Get():
+                mesh.GetDoubleSidedAttr().Set(False)
+                report['changed'] = True
+            if prim.GetName() in LENSES and front_sheet(mesh):
                 report['sheets'].append(prim.GetName())
+                report['changed'] = True
     missing = set(alphas) - set(report['opacity'])
     if missing:
         raise RuntimeError('No USD preview surface for ' + ', '.join(sorted(missing)))
-    stage.GetRootLayer().Save()
+    if report['changed']:
+        stage.GetRootLayer().Save()
     return report
 
 
-work = Path(tempfile.mkdtemp(prefix='violet_usd_'))
-with zipfile.ZipFile(MODEL) as package:
-    package.extractall(work)
-    layer = work / package.namelist()[0]
-report = patch(layer, see_through_alphas())
-packaged = work / MODEL.name
-if not UsdUtils.CreateNewUsdzPackage(str(layer), str(packaged)):
-    raise RuntimeError(f'Could not package {MODEL}')
-shutil.move(packaged, MODEL)
+with tempfile.TemporaryDirectory(prefix='violet_usd_') as work:
+    with zipfile.ZipFile(MODEL) as package:
+        package.extractall(work)
+        layer = Path(work) / package.namelist()[0]
+    report = patch(layer, see_through_alphas())
+    # An already patched model is left alone, so running this again doesn't touch the file.
+    if report['changed']:
+        packaged = Path(work) / MODEL.name
+        if not UsdUtils.CreateNewUsdzPackage(str(layer), str(packaged)):
+            raise RuntimeError(f'Could not package {MODEL}')
+        shutil.move(packaged, MODEL)
 print('VIOLET_PATCH', report, MODEL.stat().st_size, 'bytes')
