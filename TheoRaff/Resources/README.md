@@ -38,7 +38,7 @@ Every hat is built around the same reference head so the AR view can wear it wit
 - The origin is halfway between the eyes.
 - +y is up and +z points out of the face, matching ARKit's face anchor.
 
-`ARViewContainer` moves the hat to the wearer's eye midpoint, scales it by their eye distance (`HatFit`), and puts an invisible head-shaped occluder inside it so the far side of the brim hides behind the head. `HatFitTests` loads every headwear model and checks it follows this layout.
+`ARViewContainer` moves the hat to the wearer's eye midpoint, scales it by their eye distance (`HatFit`), and puts an invisible head-shaped occluder inside it so the far side of the brim hides behind the head. `HatFitTests` loads every hat and checks it follows this layout.
 
 To export from Blender: select one hat, then File → Export → USD with `.usdz` as the extension, Convert Orientation on (forward −Z, up Y), Triangulate on, and Export Lights and Cameras off. A new hat needs the same origin and scale: put it on `RefHead` and export it in place.
 
@@ -55,3 +55,22 @@ The exports use metres, +y up and +z forward, with lenses in front and temples e
 `Y2K_Violet_Butterfly.usdz` adds an original swept butterfly frame with polished silver rims, ten small crystal accents and violet gradient lenses. Its gradient texture is embedded in the USDZ; the 151 KB file has 9,852 triangles. The editable source is `art/y2k_violet_butterfly.blend`, with the image packed in. Its own Blender render is `violet-butterfly-shades.imageset`, prepared on the shared 768 x 960 canvas.
 
 The model uses the same coordinates and bounds-based glasses fit as the other eyewear. `EyewearAssetTests` checks its loading, dimensions, fitted lens positions, catalog/deck entry and embedded gradient material.
+
+## Y2K accessories
+
+Four original pieces, modelled in Blender with no third-party geometry, textures or branding:
+
+| Garment | Model | Tris | Size |
+| --- | --- | --- | --- |
+| Pastel Butterfly Clips: six glitter-rimmed clips along the front hairline | `Y2K_Butterfly_Clips` | 20,376 | 893 KB |
+| Rhinestone Tiara: silver crown with a faceted pink heart | `Y2K_Rhinestone_Tiara` | 9,042 | 389 KB |
+| Aqua Tinted Visor: see-through brim, terry band, rhinestone heart | `Y2K_Tinted_Visor` | 8,956 | 385 KB |
+| Gold Bamboo Hoops: segmented hoops hanging from the earlobes | `Y2K_Bamboo_Hoops` | 6,912 | 86 KB |
+
+They're `headwear`, so they ride in the AR view's hat slot: built on `RefHead` with the hats' layout (metres, origin between the eyes, +y up, +z out of the face), moved to the eyes and scaled by `HatFit`, with the head occluder hiding whatever goes behind the head. They join the live Try On deck through `Catalog.liveLooks`. One headwear item is worn at a time, so the hoops can't be combined with a hat yet.
+
+The source is `art/y2k_accessories.blend`: scene `Y2K_Accessories` has one collection per accessory on `RefHead`, and `Y2K_Accessory_Shots` has the product-photo layouts and a copy of the hat photo rig. Its Text Editor holds the scripts that built everything: one per accessory, `y2k_export_accessories.py` to write the USDZs into this folder, and `y2k_product_shots.py` to render the closet photos into `build/accessory-previews`. Run `prep-garment.swift <png> <garment-id> --keep-background` on each render.
+
+Blender's USD export writes every material as opaque, so the export script copies each material's Alpha into the USD opacity before packaging. Translucent parts are single sheets drawn from both sides, not thin closed shells, so RealityKit never sorts two see-through layers of the same part into streaks.
+
+`AccessoryAssetTests` loads the shipped files through `FaceModelLibrary` and checks each sits where it's worn, that no vertex sinks inside the head occluder, and that the wings and brim stay see-through. `HatFitTests` keeps checking the four hats.

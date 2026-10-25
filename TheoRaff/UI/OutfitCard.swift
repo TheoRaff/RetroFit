@@ -56,13 +56,13 @@ struct OutfitCard: View {
         }
     }
 
-    /// What's in the look. A single glasses or hat card says what kind it is instead of
-    /// repeating its name.
+    /// What's in the look. A single glasses or headwear card says what kind it is instead of
+    /// repeating its name. Headwear covers hats, hair clips, the tiara and the hoops.
     private var subtitle: String {
         if outfit.garments.count == 1, let garment = outfit.garments.first {
             switch garment.category {
             case .eyewear: return "Glasses · live try-on"
-            case .headwear: return "Hat · live try-on"
+            case .headwear: return "Headwear · live try-on"
             default: break
             }
         }

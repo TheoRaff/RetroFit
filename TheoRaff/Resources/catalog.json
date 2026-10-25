@@ -112,6 +112,42 @@
       "tags": ["scene", "emo"]
     },
     {
+      "id": "pastel-butterfly-clips",
+      "name": "Pastel Butterfly Clips",
+      "category": "headwear",
+      "imageName": "pastel-butterfly-clips",
+      "modelName": "Y2K_Butterfly_Clips",
+      "searchQuery": "y2k butterfly hair clips",
+      "tags": ["y2k", "butterfly", "pop"]
+    },
+    {
+      "id": "rhinestone-tiara",
+      "name": "Rhinestone Tiara",
+      "category": "headwear",
+      "imageName": "rhinestone-tiara",
+      "modelName": "Y2K_Rhinestone_Tiara",
+      "searchQuery": "y2k rhinestone tiara pink heart",
+      "tags": ["mcbling", "going-out"]
+    },
+    {
+      "id": "aqua-tinted-visor",
+      "name": "Aqua Tinted Visor",
+      "category": "headwear",
+      "imageName": "aqua-tinted-visor",
+      "modelName": "Y2K_Tinted_Visor",
+      "searchQuery": "y2k clear tinted plastic sun visor",
+      "tags": ["sporty", "mcbling", "cyber"]
+    },
+    {
+      "id": "gold-bamboo-hoops",
+      "name": "Gold Bamboo Hoops",
+      "category": "headwear",
+      "imageName": "gold-bamboo-hoops",
+      "modelName": "Y2K_Bamboo_Hoops",
+      "searchQuery": "y2k gold bamboo hoop earrings",
+      "tags": ["hip-hop", "mcbling"]
+    },
+    {
       "id": "pink-velour-hoodie",
       "name": "Pink Velour Hoodie",
       "category": "top",

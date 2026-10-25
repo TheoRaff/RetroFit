@@ -1,0 +1,12 @@
+{
+  "images" : [
+    {
+      "filename" : "aqua-tinted-visor.png",
+      "idiom" : "universal"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}

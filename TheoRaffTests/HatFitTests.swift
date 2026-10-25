@@ -27,10 +27,14 @@ struct HatFitTests {
         #expect(HatFit.headRadii.x < 0.08)
     }
 
-    /// Each headwear USDZ is in metres, sits over the eyes (origin), rises above them and faces +z.
+    /// Each hat USDZ is in metres, sits over the eyes (origin), rises above them and faces +z.
+    /// The clips, tiara, visor and hoops share the hat slot but not a hat's shape, so
+    /// `AccessoryAssetTests` checks them instead.
     @MainActor
     @Test func everyHatModelIsBuiltAroundTheEyes() throws {
-        let hats = try Catalog.load().garments.filter { $0.category == .headwear }
+        let hats = try Catalog.load().garments.filter {
+            $0.category == .headwear && !AccessoryAssetTests.models.contains($0.modelName ?? "")
+        }
         #expect(hats.count >= 4)
         for hat in hats {
             let name = try #require(hat.modelName)
