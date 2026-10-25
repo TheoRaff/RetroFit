@@ -46,8 +46,8 @@ struct BufferingBar: View {
         }
         .frame(height: 20)
         .padding(1)
-        .clipped()
-        .background(Win95.face)
+        .clipShape(RoundedRectangle(cornerRadius: Win95.cornerRadius, style: .continuous))
+        .background(Win95.face, in: RoundedRectangle(cornerRadius: Win95.cornerRadius, style: .continuous))
         .overlay(Win95Bevel(style: .thinSunken))
     }
 }

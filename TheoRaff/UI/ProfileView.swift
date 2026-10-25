@@ -1,9 +1,11 @@
 import SwiftUI
 
-/// The profile tab: how many looks you've tried and everything you've saved.
+/// The profile tab: the app's theme, how many looks you've tried and everything you've saved.
 struct ProfileView: View {
     let session: TryOnSession
     @AppStorage("photoCountdownSeconds") private var photoCountdownSeconds = 3
+    private let themeStore = ThemeStore.shared
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         VStack(spacing: 0) {
@@ -12,6 +14,19 @@ struct ProfileView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
                     groupBox("Your style") {
+                        groupBox("Theme") {
+                            Win95SegmentedPicker(
+                                options: AppTheme.allCases,
+                                selection: theme,
+                                axis: dynamicTypeSize.isAccessibilitySize ? .vertical : .horizontal
+                            ) { $0.name }
+
+                            Text(themeStore.theme == .chrome
+                                 ? "Pink iridescent glass and liquid chrome."
+                                 : "Grey Windows 2000 buttons and windows.")
+                                .font(Win95.font(12))
+                                .foregroundStyle(Win95.secondaryText)
+                        }
                         groupBox("Photo countdown") {
                             Stepper(value: $photoCountdownSeconds, in: 0...10) {
                                 HStack {
@@ -54,23 +69,40 @@ struct ProfileView: View {
             }
             .padding(8)
         }
-        .background(Win95.face.ignoresSafeArea())
+        .background(Win95Backdrop().ignoresSafeArea())
+    }
+
+    /// Switches the whole app over with a short cross-fade.
+    private var theme: Binding<AppTheme> {
+        Binding {
+            themeStore.theme
+        } set: { newTheme in
+            withAnimation(.easeInOut(duration: 0.3)) { themeStore.theme = newTheme }
+        }
     }
 
     /// A Windows group box: an etched frame with its caption sitting on the top edge.
+    /// A glass card with a pearl caption tag in Y2K Chrome.
     private func groupBox<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 10, content: content)
             .padding(.horizontal, 12)
             .padding(.top, 18)
             .padding(.bottom, 12)
             .frame(maxWidth: .infinity, alignment: .leading)
+            .background {
+                if Win95.isChrome {
+                    RoundedRectangle(cornerRadius: Win95.cornerRadius, style: .continuous)
+                        .fill(Chrome.groupFill)
+                        .padding(.top, 8)
+                }
+            }
             .overlay(Win95Bevel(style: .etched).padding(.top, 8))
             .overlay(alignment: .topLeading) {
                 Text(title)
                     .font(Win95.font(13))
                     .foregroundStyle(Win95.text)
-                    .padding(.horizontal, 4)
-                    .background(Win95.face)
+                    .padding(.horizontal, Win95.isChrome ? 8 : 4)
+                    .background(Win95.face, in: RoundedRectangle(cornerRadius: Win95.cornerRadius / 2, style: .continuous))
                     .padding(.leading, 8)
                     .accessibilityAddTraits(.isHeader)
             }
