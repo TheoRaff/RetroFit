@@ -49,7 +49,7 @@ struct Win95MessageBox<Buttons: View>: View {
 }
 
 /// A message box button. The default choice gets the black ring Windows draws round it,
-/// inside the same overall size as its neighbours.
+/// inside the same overall size as its neighbours, or a pink one in Y2K Chrome.
 struct Win95DialogButton: View {
     let title: String
     var isDefault = false
@@ -68,7 +68,11 @@ struct Win95DialogButton: View {
         .padding(isDefault ? 1 : 0)
         .overlay {
             if isDefault {
-                Rectangle().strokeBorder(Win95.text, lineWidth: 1)
+                if Win95.isChrome {
+                    Capsule().strokeBorder(Win95.navy, lineWidth: 2)
+                } else {
+                    Rectangle().strokeBorder(Win95.text, lineWidth: 1)
+                }
             }
         }
     }

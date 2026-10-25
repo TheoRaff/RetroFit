@@ -60,7 +60,7 @@ struct ClosetView: View {
             }
             .padding(8)
         }
-        .background(Win95.face.ignoresSafeArea())
+        .background(Win95Backdrop().ignoresSafeArea())
     }
 
     @ViewBuilder
@@ -182,7 +182,7 @@ private struct GarmentCard: View {
                             .font(.system(size: 12, weight: .heavy))
                             .foregroundStyle(.white)
                             .frame(width: 24, height: 24)
-                            .background(Win95.navy)
+                            .background(Win95.navy, in: RoundedRectangle(cornerRadius: Win95.cornerRadius * 0.75, style: .continuous))
                             .padding(4)
                             .accessibilityLabel("In your outfit")
                     }
@@ -221,7 +221,7 @@ private struct GarmentCard: View {
 
     private var cornerButtons: some View {
         let isLiked = session.isLiked(garment)
-        return HStack(spacing: 0) {
+        return HStack(spacing: Win95.isChrome ? 4 : 0) {
             Button(action: onFindIt) {
                 Win95IconLabel(systemImage: "bag")
             }

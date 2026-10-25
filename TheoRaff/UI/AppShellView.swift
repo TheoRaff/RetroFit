@@ -56,7 +56,7 @@ struct AppShellView: View {
         // The same height as the hidden system tab bar, which the pages still leave room for.
         // The pressed tab hangs a little into the home indicator area, as in the mockup.
         .frame(height: 49, alignment: .top)
-        .background(Win95.face.ignoresSafeArea(edges: .bottom))
+        .background(Win95TaskbarBackground().ignoresSafeArea(edges: .bottom))
         // An etched line along the top edge.
         .overlay(alignment: .top) {
             VStack(spacing: 0) {
